@@ -46,6 +46,8 @@ namespace VoiceCoderBrief
         private Panel pnlPostup;
         private RichTextBox rtbSpec;
         private Label lblSpecHlavicka;
+        private Label lblNalezy;
+        private List<Nalez> _nalezy = new List<Nalez>();
         private ListView lvLog;
         private ToolStripStatusLabel lblStav;
 
@@ -153,7 +155,7 @@ namespace VoiceCoderBrief
             };
             tool.Items.Add(tip2);
 
-            var verze = new ToolStripLabel("v0.2")
+            var verze = new ToolStripLabel("v0.3")
             {
                 Alignment = ToolStripItemAlignment.Right,
                 ForeColor = Color.Silver
@@ -298,7 +300,20 @@ namespace VoiceCoderBrief
                 WordWrap = true
             };
 
+            lblNalezy = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 28,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 0, 0, 0),
+                Visible = false,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI Semibold", 9.5f)
+            };
+            lblNalezy.Click += (s, e) => ZobrazNalezy();
+
             split.Panel2.Controls.Add(rtbSpec);
+            split.Panel2.Controls.Add(lblNalezy);
             split.Panel2.Controls.Add(lblSpecHlavicka);
 
             return split;
@@ -866,7 +881,49 @@ namespace VoiceCoderBrief
             lblSpecHlavicka.Text = "Živá specifikace · verze " + _projekt.Verze +
                 " · zodpovězeno " + (SpecSluzba.PocetZodpovezenych(_projekt) + SpecSluzba.PocetPredpokladu(_projekt)) +
                 "/" + Otazky.Vse.Count;
+            ObnovNalezy();
         }
+
+        private void ObnovNalezy()
+        {
+            _nalezy = KonzistencniKontrola.Zkontroluj(_projekt);
+            if (_nalezy.Count == 0)
+            {
+                lblNalezy.Visible = false;
+                return;
+            }
+
+            int rozpory = _nalezy.Count(n => n.Zavaznost == Zavaznost.Rozpor);
+            int varovani = _nalezy.Count - rozpory;
+            var casti = new List<string>();
+            if (rozpory > 0) casti.Add(Mnozne(rozpory, "rozpor", "rozpory", "rozporů"));
+            if (varovani > 0) casti.Add(Mnozne(varovani, "varování", "varování", "varování"));
+
+            lblNalezy.Text = (rozpory > 0 ? "❗ " : "⚠️ ") + "Kontrola konzistence: " +
+                string.Join(" a ", casti) + " – klikni pro detail";
+            lblNalezy.BackColor = rozpory > 0 ? Color.FromArgb(253, 232, 232) : Color.FromArgb(255, 244, 219);
+            lblNalezy.ForeColor = rozpory > 0 ? Color.FromArgb(155, 28, 28) : Color.FromArgb(146, 90, 4);
+            lblNalezy.Visible = true;
+        }
+
+        private void ZobrazNalezy()
+        {
+            if (_nalezy.Count == 0) return;
+            var sb = new StringBuilder();
+            foreach (var n in _nalezy)
+            {
+                sb.Append(n.Zavaznost == Zavaznost.Rozpor ? "❗ ROZPOR: " : "⚠ Varování: ");
+                sb.AppendLine(n.Titulek);
+                sb.AppendLine("     " + n.Detail);
+                sb.AppendLine();
+            }
+            sb.AppendLine("(Kontrola je orientační – porovnává klíčová slova, nechápe význam.)");
+            MessageBox.Show(this, sb.ToString(), "Kontrola konzistence",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private static string Mnozne(int n, string jedna, string dvaAzCtyri, string vice)
+            => n == 1 ? "1 " + jedna : (n >= 2 && n <= 4 ? n + " " + dvaAzCtyri : n + " " + vice);
 
         private void ObnovLog()
         {
@@ -904,7 +961,7 @@ namespace VoiceCoderBrief
         private void ObnovTitulek()
         {
             string nazev = string.IsNullOrWhiteSpace(_projekt.Nazev) ? "nový projekt" : _projekt.Nazev.Trim();
-            Text = "VoiceCoder Brief – " + nazev + (_dirty ? " *" : "") + " – v0.2";
+            Text = "VoiceCoder Brief – " + nazev + (_dirty ? " *" : "") + " – v0.3";
         }
 
         private void Stav(string text) => lblStav.Text = text;

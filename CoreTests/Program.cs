@@ -87,7 +87,48 @@ internal static class Testy
         Over(mdPrazdny.Contains("(zatím nezadán"), "prázdný projekt: výzva k zadání nápadu");
         SpecSluzba.RenderJson(prazdny);
 
+        // --- kontrola konzistence ---
+        var cisty = new SpecProjekt { Napad = "Jednoduchá kalkulačka." };
+        SpecSluzba.Odpovez(cisty, "tech-offline", "Plně offline.");
+        Over(KonzistencniKontrola.Zkontroluj(cisty).Count == 0, "kontrola: čistý projekt bez nálezů");
+
+        var k1 = new SpecProjekt { Napad = "Appka se synchronizací do cloudu mezi zařízeními." };
+        SpecSluzba.Odpovez(k1, "tech-offline", "Musí fungovat plně offline.");
+        var n1 = KonzistencniKontrola.Zkontroluj(k1);
+        Over(n1.Any(n => n.Titulek == "Offline vs. online" && n.Zavaznost == Zavaznost.Rozpor), "kontrola: offline×cloud je rozpor");
+
+        var k2 = new SpecProjekt { Napad = "Evidence hostů: jméno a email každého hosta." };
+        SpecSluzba.Odpovez(k2, "data-obsah", "Jen neosobní provozní data, bez osobních údajů.");
+        Over(KonzistencniKontrola.Zkontroluj(k2).Any(n => n.Titulek == "Osobní údaje"), "kontrola: osobní údaje×bez osobních je rozpor");
+
+        var k3 = new SpecProjekt { Napad = "Program na skladovou evidenci." };
+        SpecSluzba.Odpovez(k3, "rozsah-nongoals", "tisk sestav, statistiky prodeje");
+        SpecSluzba.Odpovez(k3, "ux-obrazovky", "Hlavní obrazovka se seznamem, detail položky, tisk sestav na konci měsíce.");
+        Over(KonzistencniKontrola.Zkontroluj(k3).Any(n => n.Titulek == "Non-goal se objevuje jinde"), "kontrola: non-goal zmíněný v UX je varování");
+
+        var k4 = new SpecProjekt();
+        SpecSluzba.Odpovez(k4, "akceptace", "funguje");
+        Over(KonzistencniKontrola.Zkontroluj(k4).Any(n => n.Titulek == "Akceptace je moc stručná"), "kontrola: vágní akceptace je varování");
+
+        var k5 = new SpecProjekt { Napad = "Chci export do CSV pro účetní." };
+        SpecSluzba.PouzijPredpoklad(k5, "data-export");
+        Over(KonzistencniKontrola.Zkontroluj(k5).Any(n => n.Titulek == "Export ano, nebo ne?"), "kontrola: export v nápadu × bez exportu je rozpor");
+
+        var k6 = new SpecProjekt();
+        SpecSluzba.PouzijPredpoklad(k6, "cil-problem");
+        SpecSluzba.PouzijPredpoklad(k6, "cil-uzivatele");
+        SpecSluzba.PouzijPredpoklad(k6, "tech-platforma");
+        var n6 = KonzistencniKontrola.Zkontroluj(k6);
+        Over(n6.Any(n => n.Titulek == "Hodně předpokladů s vysokým dopadem"), "kontrola: 3 předpoklady s vysokým dopadem jsou varování");
+        Over(n6.Any(n => n.Titulek == "Chybí původní nápad"), "kontrola: prázdný nápad + odpovědi je varování");
+
+        Over(SpecSluzba.RenderMarkdown(k1).Contains("## Kontrola konzistence"), "MD: sekce kontroly konzistence při nálezech");
+        Over(!SpecSluzba.RenderMarkdown(cisty).Contains("## Kontrola konzistence"), "MD: sekce kontroly chybí bez nálezů");
+        using (var docK = JsonDocument.Parse(SpecSluzba.RenderJson(k1)))
+            Over(docK.RootElement.GetProperty("kontrolaKonzistence").GetArrayLength() >= 1, "JSON: pole kontrolaKonzistence");
+
         Console.WriteLine();
         Console.WriteLine("VSECHNY TESTY OK (" + _ok + " kontrol)");
     }
 }
+// konec souboru

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -250,6 +251,15 @@ namespace VoiceCoderBrief.Core
                     sb.AppendLine("- [" + (ot.Dopad == Dopad.Vysoky ? "vysoký dopad" : "střední dopad") + "] " + ot.Text);
             sb.AppendLine();
 
+            var nalezy = KonzistencniKontrola.Zkontroluj(p);
+            if (nalezy.Count > 0)
+            {
+                sb.AppendLine("## Kontrola konzistence");
+                foreach (var n in nalezy)
+                    sb.AppendLine("- " + (n.Zavaznost == Zavaznost.Rozpor ? "❗ **ROZPOR: " : "⚠️ **Varování: ") + n.Titulek + "** – " + n.Detail);
+                sb.AppendLine();
+            }
+
             sb.AppendLine("## Souhrn stavu");
             sb.AppendLine("- Zodpovězeno: " + PocetZodpovezenych(p) + " / " + Otazky.Vse.Count);
             sb.AppendLine("- Označené předpoklady: " + PocetPredpokladu(p));
@@ -285,7 +295,7 @@ namespace VoiceCoderBrief.Core
             var data = new
             {
                 nastroj = "VoiceCoder Brief",
-                verzeNastroje = "0.2.0",
+                verzeNastroje = "0.3.0",
                 projekt = p.Nazev,
                 verzeSpecifikace = p.Verze,
                 vytvoreno = p.Vytvoreno,
@@ -293,6 +303,8 @@ namespace VoiceCoderBrief.Core
                 napad = p.Napad,
                 sekce,
                 otevreneOtazky = OtevreneOtazky(p).Select(o => new { id = o.Id, otazka = o.Text }).ToList(),
+                kontrolaKonzistence = KonzistencniKontrola.Zkontroluj(p)
+                    .Select(n => new { zavaznost = n.Zavaznost.ToString(), titulek = n.Titulek, detail = n.Detail }).ToList(),
                 logRozhodnuti = p.Log.Select(r => new { cas = r.Cas, akce = r.Akce, detail = r.Detail }).ToList()
             };
 
@@ -313,4 +325,269 @@ namespace VoiceCoderBrief.Core
             return p ?? new SpecProjekt();
         }
     }
+
+    /// <summary>Závažnost nálezu konzistenční kontroly.</summary>
+    public enum Zavaznost
+    {
+        Rozpor,
+        Varovani
+    }
+
+    /// <summary>Jeden nález kontroly konzistence (kap. 7: hlídání rozporů ve specifikaci).</summary>
+    public class Nalez
+    {
+        public Zavaznost Zavaznost { get; set; }
+        public string Titulek { get; set; } = "";
+        public string Detail { get; set; } = "";
+    }
+
+    /// <summary>Pravidlová kontrola rozporů – offline, bez AI. Hrubé porovnání klíčových slov:
+    /// cílem je upozornit na možný problém, ne vynášet soudy. Falešný poplach je přijatelný, mlčení ne.</summary>
+    public static class KonzistencniKontrola
+    {
+        public static List<Nalez> Zkontroluj(SpecProjekt p)
+        {
+            var nalezy = new List<Nalez>();
+            ZkontrolujOfflineOnline(p, nalezy);
+            ZkontrolujWebOffline(p, nalezy);
+            ZkontrolujOsobniUdaje(p, nalezy);
+            ZkontrolujNonGoals(p, nalezy);
+            ZkontrolujAkceptaci(p, nalezy);
+            ZkontrolujExport(p, nalezy);
+            ZkontrolujPlatformu(p, nalezy);
+            ZkontrolujPredpoklady(p, nalezy);
+            ZkontrolujChybejiciNapad(p, nalezy);
+            return nalezy;
+        }
+
+        // ---------- pravidla ----------
+
+        /// <summary>Specifikace tvrdí offline, ale jinde se mluví o cloudu/synchronizaci/online.</summary>
+        private static void ZkontrolujOfflineOnline(SpecProjekt p, List<Nalez> nalezy)
+        {
+            if (!RikaOffline(p)) return;
+            var zdroje = Zdroje(p, "tech-offline");
+            string zdroj;
+            string slovo = NajdiSlovo(zdroje, new[] { "cloud", "synchronizac", "online" }, out zdroj);
+            if (slovo != null)
+                nalezy.Add(new Nalez
+                {
+                    Zavaznost = Zavaznost.Rozpor,
+                    Titulek = "Offline vs. online",
+                    Detail = "Technika říká „funguje offline“, ale " + zdroj + " zmiňuje „" + slovo + "“. Rozhodni, co platí."
+                });
+        }
+
+        /// <summary>Webová platforma + požadavek plně offline = jde jen jako PWA, stojí za ověření.</summary>
+        private static void ZkontrolujWebOffline(SpecProjekt p, List<Nalez> nalezy)
+        {
+            string plat = Norm(TextOdpovedi(p, "tech-platforma"));
+            if (!RikaOffline(p) || (!plat.Contains("web") && !plat.Contains("prohlizec"))) return;
+            nalezy.Add(new Nalez
+            {
+                Zavaznost = Zavaznost.Varovani,
+                Titulek = "Web + plně offline",
+                Detail = "Webová aplikace bez internetu funguje jen jako PWA s offline režimem – ověř, jestli to tak myslíš."
+            });
+        }
+
+        /// <summary>Tvrdíme „bez osobních údajů“, ale jinde se objevují jména, e-maily, registrace…</summary>
+        private static void ZkontrolujOsobniUdaje(SpecProjekt p, List<Nalez> nalezy)
+        {
+            string data = Norm(TextOdpovedi(p, "data-obsah"));
+            bool bezOsobnich = data.Contains("bez osobnich") || data.Contains("neosobni") || data.Contains("zadne osobni");
+            if (!bezOsobnich) return;
+
+            var zdroje = Zdroje(p, "data-obsah");
+            string zdroj;
+            string slovo = NajdiSlovo(zdroje, new[] { "jmeno", "jmena", "email", "e-mail", "telefon", "heslo", "registrac", "prihlas" }, out zdroj);
+            if (slovo != null)
+                nalezy.Add(new Nalez
+                {
+                    Zavaznost = Zavaznost.Rozpor,
+                    Titulek = "Osobní údaje",
+                    Detail = "Data říkají „bez osobních údajů“, ale " + zdroj + " zmiňuje „" + slovo + "“. Osobní údaje = GDPR a vyšší nároky."
+                });
+        }
+
+        /// <summary>Něco je v non-goals, ale jinde se to popisuje jako funkce.</summary>
+        private static void ZkontrolujNonGoals(SpecProjekt p, List<Nalez> nalezy)
+        {
+            var odp = SpecSluzba.OdpovedNa(p, "rozsah-nongoals");
+            if (odp == null || odp.JePredpoklad) return;
+
+            var stop = new HashSet<string> { "zadne", "nebude", "nebudou", "nechci", "nesmi", "prvni", "verze", "verzi",
+                "aplikace", "appka", "zatim", "pozdeji", "budou", "chceme", "nechceme", "resit", "nema", "mit" };
+            var zdroje = Zdroje(p, "rozsah-nongoals", "akceptace", "rizika");
+            int hitu = 0;
+
+            foreach (var fragment in odp.Text.Split(new[] { ',', ';', '\n', '•' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var slova = Norm(fragment)
+                    .Split(new[] { ' ', '.', '!', '?', '(', ')', '"', '-', ':' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(w => w.Length >= 5 && !stop.Contains(w));
+
+                foreach (var w in slova)
+                {
+                    string zdrojNg = null;
+                    foreach (var z in zdroje)
+                        if (z.Value.Contains(w)) { zdrojNg = z.Key; break; }
+                    if (zdrojNg == null) continue;
+
+                    nalezy.Add(new Nalez
+                    {
+                        Zavaznost = Zavaznost.Varovani,
+                        Titulek = "Non-goal se objevuje jinde",
+                        Detail = "„" + fragment.Trim() + "“ je v non-goals, ale " + zdrojNg + " o tom mluví („" + w + "“). Patří to do v1, nebo ne?"
+                    });
+                    hitu++;
+                    break;
+                }
+                if (hitu >= 2) break;
+            }
+        }
+
+        /// <summary>Akceptační kritéria moc stručná na to, aby šla ověřit.</summary>
+        private static void ZkontrolujAkceptaci(SpecProjekt p, List<Nalez> nalezy)
+        {
+            var odp = SpecSluzba.OdpovedNa(p, "akceptace");
+            if (odp == null || odp.JePredpoklad) return;
+            if (Norm(odp.Text).Trim().Length >= 20) return;
+            nalezy.Add(new Nalez
+            {
+                Zavaznost = Zavaznost.Varovani,
+                Titulek = "Akceptace je moc stručná",
+                Detail = "Podle takhle krátkých kritérií nepůjde poznat, že je hotovo. Napiš 2–3 konkrétní ověřitelné podmínky."
+            });
+        }
+
+        /// <summary>Export je odmítnutý, ale jinde se o něm mluví.</summary>
+        private static void ZkontrolujExport(SpecProjekt p, List<Nalez> nalezy)
+        {
+            string exp = Norm(TextOdpovedi(p, "data-export"));
+            bool bezExportu = exp.Contains("bez export") || exp.Contains("zadny export");
+            if (!bezExportu) return;
+
+            // non-goals a rizika legitimně říkají „bez exportu“ – ty nekontrolujeme
+            var zdroje = Zdroje(p, "data-export", "rozsah-nongoals", "rizika", "akceptace", "tech-offline", "tech-platforma", "cil-uzivatele");
+            string zdroj;
+            string slovo = NajdiSlovo(zdroje, new[] { "export", "csv", "tisk", "import", "do pdf", "sestav" }, out zdroj);
+            if (slovo != null)
+                nalezy.Add(new Nalez
+                {
+                    Zavaznost = Zavaznost.Rozpor,
+                    Titulek = "Export ano, nebo ne?",
+                    Detail = "Data říkají „bez exportu“, ale " + zdroj + " zmiňuje „" + slovo + "“. Export je levný teď, drahý dodatečně."
+                });
+        }
+
+        /// <summary>Platforma je desktop/Windows, ale jinde se mluví o mobilu.</summary>
+        private static void ZkontrolujPlatformu(SpecProjekt p, List<Nalez> nalezy)
+        {
+            string plat = Norm(TextOdpovedi(p, "tech-platforma"));
+            bool desktop = plat.Contains("windows") || plat.Contains("desktop") || plat.Contains("pocitac");
+            if (!desktop) return;
+
+            var zdroje = Zdroje(p, "tech-platforma");
+            string zdroj;
+            string slovo = NajdiSlovo(zdroje, new[] { "mobil", "telefon", "android", "iphone" }, out zdroj);
+            if (slovo != null)
+                nalezy.Add(new Nalez
+                {
+                    Zavaznost = Zavaznost.Varovani,
+                    Titulek = "Desktop vs. mobil",
+                    Detail = "Platforma je Windows/desktop, ale " + zdroj + " zmiňuje „" + slovo + "“. Patří mobil do první verze?"
+                });
+        }
+
+        /// <summary>Moc předpokladů u otázek s vysokým dopadem = křehká specifikace.</summary>
+        private static void ZkontrolujPredpoklady(SpecProjekt p, List<Nalez> nalezy)
+        {
+            int pocet = Otazky.Vse.Count(ot =>
+            {
+                if (ot.Dopad != Dopad.Vysoky) return false;
+                var o = SpecSluzba.OdpovedNa(p, ot.Id);
+                return o != null && o.JePredpoklad;
+            });
+            if (pocet < 3) return;
+            nalezy.Add(new Nalez
+            {
+                Zavaznost = Zavaznost.Varovani,
+                Titulek = "Hodně předpokladů s vysokým dopadem",
+                Detail = "Specifikace stojí na " + pocet + " nepotvrzených předpokladech s vysokým dopadem. Projdi je a potvrď, ať agent nestaví na písku."
+            });
+        }
+
+        /// <summary>Odpovídá se na otázky, ale chybí původní nápad.</summary>
+        private static void ZkontrolujChybejiciNapad(SpecProjekt p, List<Nalez> nalezy)
+        {
+            if (!string.IsNullOrWhiteSpace(p.Napad) || p.Odpovedi.Count < 3) return;
+            nalezy.Add(new Nalez
+            {
+                Zavaznost = Zavaznost.Varovani,
+                Titulek = "Chybí původní nápad",
+                Detail = "Máš zodpovězené otázky, ale pole s nápadem je prázdné. Bez něj chybí kontext, proč appka vzniká."
+            });
+        }
+
+        // ---------- pomocné ----------
+
+        private static bool RikaOffline(SpecProjekt p)
+        {
+            string off = Norm(TextOdpovedi(p, "tech-offline"));
+            return off.Contains("offline") || off.Contains("bez internetu") || off.Contains("bez pripojeni");
+        }
+
+        /// <summary>Normalizace pro porovnávání: malá písmena, bez české diakritiky.
+        /// Ruční mapování – string.Normalize() nefunguje s InvariantGlobalization (bez ICU).</summary>
+        private const string Diakritika = "áčďéěíňóřšťúůýž";
+        private const string BezDiakritiky = "acdeeinorstuuyz";
+
+        private static string Norm(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new StringBuilder(s.Length);
+            foreach (char puvodni in s)
+            {
+                char c = char.ToLowerInvariant(puvodni);
+                int i = Diakritika.IndexOf(c);
+                sb.Append(i >= 0 ? BezDiakritiky[i] : c);
+            }
+            return sb.ToString();
+        }
+
+        private static string TextOdpovedi(SpecProjekt p, string id)
+        {
+            var o = SpecSluzba.OdpovedNa(p, id);
+            return o == null ? "" : o.Text;
+        }
+
+        /// <summary>Texty k prohledání: nápad + všechny odpovědi kromě vyjmenovaných otázek (klíč = popis zdroje, hodnota = normalizovaný text).</summary>
+        private static List<KeyValuePair<string, string>> Zdroje(SpecProjekt p, params string[] krome)
+        {
+            var vysledek = new List<KeyValuePair<string, string>>();
+            if (!string.IsNullOrWhiteSpace(p.Napad))
+                vysledek.Add(new KeyValuePair<string, string>("nápad", Norm(p.Napad)));
+            foreach (var o in p.Odpovedi)
+            {
+                if (krome.Contains(o.OtazkaId)) continue;
+                var ot = Otazky.Podle(o.OtazkaId);
+                if (ot == null) continue;
+                vysledek.Add(new KeyValuePair<string, string>("odpověď na „" + Zkratka(ot.Text) + "“", Norm(o.Text)));
+            }
+            return vysledek;
+        }
+
+        private static string Zkratka(string s) => s.Length <= 40 ? s : s.Substring(0, 39) + "…";
+
+        private static string NajdiSlovo(List<KeyValuePair<string, string>> zdroje, string[] slova, out string zdroj)
+        {
+            foreach (var z in zdroje)
+                foreach (var s in slova)
+                    if (z.Value.Contains(s)) { zdroj = z.Key; return s; }
+            zdroj = null;
+            return null;
+        }
+    }
 }
+// konec souboru
