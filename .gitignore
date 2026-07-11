@@ -10,3 +10,6 @@ publish/
 *.user
 .vs/
 .DS_Store
+
+# přístupový token pro Claude (NIKDY necommitovat)
+.github_token
