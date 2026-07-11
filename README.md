@@ -16,6 +16,15 @@ Demonstrátor projektu **VoiceCoder AI** – první krok podle kap. 18 návrhu
 - Export **Markdown** (pro člověka) a **JSON** (stabilní struktura pro agenta)
 - Ukládání projektu jako `.vcbrief`
 
+## Novinky ve v0.3
+
+- **Kontrola konzistence** (kap. 7): 9 pravidel hlídá rozpory ve specifikaci – offline vs. cloud,
+  osobní údaje vs. „bez osobních údajů", non-goals popsané jako funkce, vágní akceptační kritéria,
+  odmítnutý export zmíněný jinde, desktop vs. mobil, moc předpokladů s vysokým dopadem…
+- Nálezy se ukazují v barevném pruhu nad náhledem (klik = detail) a jdou i do exportů
+  (MD sekce `Kontrola konzistence`, JSON pole `kontrolaKonzistence`)
+- Kontrola je orientační – porovnává klíčová slova, nechápe význam
+
 ## Novinky ve v0.2
 
 - Formátovaný náhled specifikace (nadpisy, odrážky, oranžově zvýrazněné **[PŘEDPOKLAD]**)
@@ -43,22 +52,4 @@ Testy jádra (běží i mimo Windows):
 
 ```bash
 cd CoreTests
-dotnet run -c Release
-```
-
-## Struktura
-
-| Cesta | Obsah |
-|---|---|
-| `VoiceCoderBrief/Core/SpecCore.cs` | Jádro: model, otázky, verzování, render MD/JSON |
-| `VoiceCoderBrief/MainForm.cs` | WinForms GUI |
-| `CoreTests/` | Automatické testy jádra (36 kontrol) |
-| `PROJECT_STATUS.md` | Živý stav projektu (vibecoding tracker) |
-
-## Roadmapa
-
-Viz `PROJECT_STATUS.md` – backlog zahrnuje napojení na Claude API (AI otázky),
-skutečné STT místo Win+H, consistency checker a podepsání exe.
-
----
-*Vzniklo vibecodingem – nápad a směr: Jenda (JendaNDT), kód: Claude.*
+dotnet run 
