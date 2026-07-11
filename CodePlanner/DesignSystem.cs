@@ -7,7 +7,7 @@ namespace CodePlanner
     {
         // Paleta barev (Sjednocená brandová paleta)
         public static readonly Color Navy = Color.FromArgb(16, 35, 63);           // #10233F - Tmavé záhlaví, hlavní nadpisy
-        public static readonly Color Teal = Color.FromArgb(23, 176, 160);         // #17B0A0 - Akcentní barva, tlačítka
+        public static readonly Color Teal = Color.FromArgb(15, 115, 104);         // #0F7368 - Akcentní barva, tlačítka (WCAG 2.1 AA kontrast 5.89:1)
         public static readonly Color TealSvetla = Color.FromArgb(224, 244, 241);   // #E0F4F1 - Výběr, zvýraznění
         public static readonly Color SvetlePozadi = Color.FromArgb(246, 248, 250); // #F6F8FA - Hlavní pozadí formulářů
         public static readonly Color InactivePozadi = Color.FromArgb(233, 236, 239); // #E9ECEF - Pozadí neaktivních prvků

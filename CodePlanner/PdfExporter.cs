@@ -32,7 +32,7 @@ namespace CodePlanner
             {
                 // Vybereme PDF tiskárnu (preferujeme přesně Microsoft Print to PDF)
                 var tiskarny = PrinterSettings.InstalledPrinters.Cast<string>().ToList();
-                string tiskarna = tiskarny.FirstOrDefault(p => string.Equals(p, "Microsoft Print to PDF", StringComparison.OrdinalIgnoreCase))
+                string? tiskarna = tiskarny.FirstOrDefault(p => string.Equals(p, "Microsoft Print to PDF", StringComparison.OrdinalIgnoreCase))
                                ?? tiskarny.FirstOrDefault(p => p.Contains("Print to PDF"))
                                ?? tiskarny.FirstOrDefault(p => p.Contains("PDF"));
                 if (tiskarna != null)
@@ -43,7 +43,7 @@ namespace CodePlanner
                 }
                 else
                 {
-                    throw new Exception("V systému nebyla nalezena žádná tiskárna PDF (např. Microsoft Print to PDF). Nainstalujte prosím PDF tiskárnu a zkuste to znovu.");
+                    throw new Exception("No PDF printer found (e.g. Microsoft Print to PDF). Please install a PDF printer and try again.");
                 }
 
                 pd.PrintPage += Pd_PrintPage;
@@ -57,6 +57,7 @@ namespace CodePlanner
         private void Pd_PrintPage(object sender, PrintPageEventArgs e)
         {
             var g = e.Graphics;
+            if (g == null) return;
             _strana++;
 
             // Margins
@@ -342,16 +343,7 @@ namespace CodePlanner
             return lines;
         }
 
-        private static float ZmerVyskuOdstavce(Graphics g, string text, Font font, float maxSirka, float radekSpacing = 3)
-        {
-            float y = 0;
-            foreach (var radek in text.Split('\n'))
-            {
-                var zabalene = ZabalText(g, radek, font, maxSirka);
-                y += zabalene.Count * (font.Height + radekSpacing);
-            }
-            return y;
-        }
+
 
         private static float VykresliOdstavec(Graphics g, string text, Font font, Brush brush, float x, float y, float maxSirka, float radekSpacing = 3)
         {

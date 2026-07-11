@@ -1,4 +1,4 @@
-# CodePlanner – Závěrečná zpráva k projektu (v2.1.0)
+# CodePlanner – Závěrečná zpráva k projektu (v2.2.0)
 
 Tento dokument shrnuje kompletní vývoj, architekturu a funkce aplikace **CodePlanner** (původně *VoiceCoder Brief*). Aplikace byla úspěšně vyvinuta, otestována, lokálně podepsána a publikována do repozitáře.
 
@@ -7,7 +7,7 @@ Tento dokument shrnuje kompletní vývoj, architekturu a funkce aplikace **CodeP
 ## 🎯 Přehled projektu
 CodePlanner je lehký, přenosný (single-file `.exe`) desktopový asistent pro Windows, který pomáhá vývojářům a analytikům transformovat neformální nápady na detailní a technologicky proveditelné projektové specifikace, agilní backlog (User Stories) a časové/finanční odhady.
 
-### Vývojový cyklus (Verze v0.1 – v2.1):
+### Vývojový cyklus (Verze v0.1 – v2.2):
 - **v0.1 – Jádro**: 10 řízených otázek, rozdělení do 7 sekcí specifikace, log změn, ukládání `.vcbrief`, exports MD/JSON.
 - **v0.2 – Facelift**: Formátovaný RTF náhled (barevné odlišení předpokladů), barevný seznam otázek, progress bar, klávesové zkratky (Ctrl+Enter, Ctrl+S, Ctrl+P).
 - **v0.3 – Kontrola konzistence**: 9 offline pravidel hlídajících logické rozpory a rizika ve specifikaci s vizuálním panelem nálezů.
@@ -19,6 +19,7 @@ CodePlanner je lehký, přenosný (single-file `.exe`) desktopový asistent pro 
 - **v1.9 – HTML micro-site**: Export celého projektu do jednoho interaktivního HTML souboru s přepínačem tmavého režimu, live search a odškrtávacím backlogem.
 - **v2.0 – Rebranding**: Kompletní přejmenování projektu, složek, namespaces a sestavení na **CodePlanner** a publikace na GitHub.
 - **v2.1 – Překlad do angličtiny, design systém, nová pravidla**: Překlad kompletního jádra, API klienta, hlasového nahrávání a formulářů z češtiny do angličtiny. Zajištěna 100% zpětná kompatibilita pro načítání starých českých specifikací `.vcbrief`. Sjednoceny barvy a písma do `DesignSystem.cs`, čímž se zamezilo GDI leakům. Přidána nová pravidla konzistence: **Rule 12 (strategie zálohování)** a **Rule 13 (dokumentace k externímu API)**.
+- **v2.2 – Robustní validace a opravy chyb**: Implementována doménová validace v loaderu, Safe Load Workflow pro bezpečné otevírání projektů a vyřešení chyb z auditu.
 
 ---
 
@@ -50,7 +51,7 @@ V projektu [CoreTests](file:///c:/Users/McNeg/Desktop/CodePlanner/CoreTests) je 
 ## 📦 Distribuce a instalace
 Aplikace je distribuována jako přenosný (portable) ZIP balíček. Nic se neinstaluje, stačí rozbalit a spustit.
 
-- **Lokální ZIP archiv**: [CodePlanner-v2.1.0.zip](file:///c:/Users/McNeg/Desktop/CodePlanner/CodePlanner-v2.1.0.zip)
+- **Lokální ZIP archiv**: [CodePlanner-v2.2.0.zip](file:///c:/Users/McNeg/Desktop/CodePlanner/CodePlanner-v2.2.0.zip)
 
 ### Lokální podpis aplikace (SmartScreen):
 Při prvním spuštění `.exe` souboru na novém počítači se může zobrazit upozornění Windows SmartScreen. V balíčku je přiložen skript `PodepsatAplikaci.ps1`, který vytvoří lokální podpisový certifikát a soubor `CodePlanner.exe` trvale podepíše, čímž se varování navždy odstraní.

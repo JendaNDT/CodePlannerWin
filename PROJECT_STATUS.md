@@ -1,5 +1,5 @@
 # CodePlanner – Project Status
-*Naposled aktualizováno: 11. 7. 2026 (v2.1.0)*
+*Naposled aktualizováno: 11. 7. 2026 (v2.2.0)*
 
 ## 🎯 Co to je
 Windows .exe demonstrátor projektu CodePlanner AI (dle PDF návrhu, kap. 18): z volně popsaného nápadu vytvoří řízenými otázkami verzovanou specifikaci s exportem pro kódovacího agenta.
@@ -41,6 +41,8 @@ Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilov
 - **v1.9: interaktivní HTML export (micro-site)** – přidán export do jednoho přenosného HTML souboru s plnohodnotným interaktivním webovým portálem projektu (přepínač tmavého režimu, odškrtávací backlog, live search a responzivní vzhled). 128 testů OK.
 - **v2.0.1: refaktor, stabilizace a opravy kritických chyb** – dokončena modularizace (rozdělení MainForm a SpecCore na samostatné soubory), vyřešeny 4 kritické bezpečnostní a stabilizační nálezy (L1, L2, S1 a S2), zavedeny příslušné jednotkové testy a celkový počet testů vzrostl na 174 (všechny OK).
 - **v2.1.0: překlad do angličtiny, design systém a nová pravidla konzistence** – kompletní překlad datových struktur jádra, API klienta, hlasového nahrávání a formulářů z češtiny do angličtiny. Zajištěna 100% zpětná kompatibilita pro načítání českých specifikací `.vcbrief`. Sjednoceny barvy a písma do `DesignSystem.cs`, čímž se zamezilo GDI leakům. Přidána nová pravidla offline kontroly konzistence: **Rule 12 (strategie zálohování)** a **Rule 13 (dokumentace k externímu API)**. Testovací sada byla přepsána a úspěšně otestována (všechny testy OK). Zkompilován finální distribuční ZIP `CodePlanner-v2.1.0.zip`.
+- **v2.2.0: robustní validace, bezpečné otevírání a opravy chyb z auditu** – implementována hloubková doménová validace a čištění deserializovaných projektů v loaderu, zaveden Safe Load Workflow (vytvoření a otestování lokální kopie před prohozením a překreslením UI), omezení délky ukládané chybové odpovědi na 100k znaků, zobrazování chyb načítání šablon z `sablony.json` v UI, odstranění nepoužívaného a opuštěného kódu. Všech 175 testů jádra prošlo úspěšně.
+
 
 ## 📝 TODO
 ### MVP (nutné pro v1)
@@ -72,15 +74,20 @@ Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilov
 - **Refaktoring do angličtiny (v2.1.0):** kódové struktury a názvy typů byly plně poangličtěny z důvodu mezinárodní konzistence kódu a snadnější integrace s AI vývojovými agenty, při zachování zpětné kompatibility načítání starých českých souborů.
 
 ## 📁 Stav souborů
-- `CodePlanner/Core/SpecCore.cs` – jádro: model, otázky, verzování, render MD/JSON, ukládání (dynamické otázky na míru v angličtině)
+- `CodePlanner/Core/SpecCore.cs` – jádro: business pravidla, persistence a rendering (Markdown, HTML, JSON)
+- `CodePlanner/Core/Models.cs` – datové modely a enums s plnou nullable anotací
+- `CodePlanner/Core/StandardQuestions.cs` – vestavěné otázky pro šablony
+- `CodePlanner/Core/ConsistencyChecker.cs` – offline pravidla kontroly konzistence (poangličtěno)
+- `CodePlanner/Core/TemplateService.cs` – správa custom šablon a sablony.json
 - `CodePlanner/Core/GeminiService.cs` – AI integrace (deserializace, strukturované výstupy v angličtině)
 - `CodePlanner/Core/VoiceRecorder.cs` – P/Invoke nahrávání zvuku z mikrofonu (winmm.dll)
 - `CodePlanner/DesignSystem.cs` – barvy a písma pro UI chránící před GDI leakem
 - `CodePlanner/ProjectTypeComboItem.cs` – model položek ComboBoxu pro výběr šablony
-- `CodePlanner/MainForm.cs` – celé GUI poangličtěné a propojené s design systémem
+- `CodePlanner/MainForm.cs` – hlavní formulář GUI (UI koordinace, log, vyhledávání, chat)
+- `CodePlanner/MainForm.ProjectLifecycle.cs` – správa životního cyklu projektu (ukládání, otevírání, export, nedávné a přílohy)
 - `CodePlanner/SettingsForm.cs` – nastavení Gemini API
 - `CodePlanner/Program.cs` – vstupní bod
 - `CodePlanner/CodePlanner.csproj` – konfigurace buildu
-- `CoreTests/` – automatické testy jádra (174 kontrol pro v2.1.0, testovány nové konzistenční kontroly)
+- `CoreTests/` – automatické testy jádra (175 kontrol, testována všechna nová a refaktorovaná pravidla)
 - `PodepsatAplikaci.ps1` – utilita pro lokální podepisování exe k obcházení SmartScreen
-- `CodePlanner-v2.1.0.zip` – finální hotová aplikace v2.1.0 + návod CTI_ME.txt
+- `CodePlanner-v2.2.0.zip` – finální hotová aplikace v2.2.0 + návod CTI_ME.txt

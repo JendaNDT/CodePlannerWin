@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 namespace CodePlanner.Core
 {
@@ -50,8 +51,11 @@ namespace CodePlanner.Core
             Save();
         }
 
+        public static string? SettingsPathOverride { get; set; } = null;
+
         private static string GetSettingsPath()
         {
+            if (!string.IsNullOrEmpty(SettingsPathOverride)) return SettingsPathOverride;
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appData, "CodePlanner", "settings.json");
         }
@@ -65,7 +69,24 @@ namespace CodePlanner.Core
                 {
                     string json = File.ReadAllText(cesta);
                     var nastaveni = JsonSerializer.Deserialize<GeminiSettings>(json);
-                    if (nastaveni != null) return nastaveni;
+                    if (nastaveni != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(nastaveni.GeminiApiKey))
+                        {
+                            try
+                            {
+                                byte[] cipher = Convert.FromBase64String(nastaveni.GeminiApiKey);
+                                byte[] plain = ProtectedData.Unprotect(cipher, null, DataProtectionScope.CurrentUser);
+                                nastaveni.GeminiApiKey = Encoding.UTF8.GetString(plain);
+                            }
+                            catch
+                            {
+                                // Pokud dešifrování selže (např. starý plaintext klíč),
+                                // ponecháme jej beze změny (při příštím uložení se zašifruje).
+                            }
+                        }
+                        return nastaveni;
+                    }
                 }
             }
             catch
@@ -81,14 +102,28 @@ namespace CodePlanner.Core
             try
             {
                 string cesta = GetSettingsPath();
-                string slozka = Path.GetDirectoryName(cesta);
-                if (!Directory.Exists(slozka))
+                string? slozka = Path.GetDirectoryName(cesta);
+                if (!string.IsNullOrEmpty(slozka) && !Directory.Exists(slozka))
                 {
                     Directory.CreateDirectory(slozka);
                 }
 
+                // Vytvoříme klon s šifrovaným klíčem pro uložení
+                var clone = new GeminiSettings
+                {
+                    GeminiModel = this.GeminiModel,
+                    RecentProjects = new List<string>(this.RecentProjects ?? new List<string>())
+                };
+
+                if (!string.IsNullOrWhiteSpace(this.GeminiApiKey))
+                {
+                    byte[] plain = Encoding.UTF8.GetBytes(this.GeminiApiKey.Trim());
+                    byte[] cipher = ProtectedData.Protect(plain, null, DataProtectionScope.CurrentUser);
+                    clone.GeminiApiKey = Convert.ToBase64String(cipher);
+                }
+
                 var opt = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(this, opt);
+                string json = JsonSerializer.Serialize(clone, opt);
                 File.WriteAllText(cesta, json, Encoding.UTF8);
             }
             catch (Exception ex)
@@ -103,42 +138,20 @@ namespace CodePlanner.Core
             get
             {
                 if (!string.IsNullOrWhiteSpace(GeminiApiKey)) return GeminiApiKey.Trim();
-                string envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+                string? envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
                 return envKey != null ? envKey.Trim() : "";
             }
         }
     }
 
-    public class GeminiAnalysisResult
-    {
-        [JsonPropertyName("nazev")]
-        public string Name { get; set; } = "";
 
-        [JsonPropertyName("odpovedi")]
-        public List<GeminiAnswer> Answers { get; set; } = new List<GeminiAnswer>();
-    }
-
-    /// <summary>
-    /// Jedna navržená odpověď z Gemini API.
-    /// </summary>
-    public class GeminiAnswer
-    {
-        [JsonPropertyName("otazkaId")]
-        public string QuestionId { get; set; } = "";
-
-        [JsonPropertyName("text")]
-        public string Text { get; set; } = "";
-
-        [JsonPropertyName("jePredpoklad")]
-        public bool IsAssumption { get; set; }
-    }
 
     public class GeminiDynamicResult
     {
-        [JsonPropertyName("nazev")]
+        [JsonPropertyName("name")]
         public string Name { get; set; } = "";
 
-        [JsonPropertyName("otazky")]
+        [JsonPropertyName("questions")]
         public List<GeminiDynamicQuestion> Questions { get; set; } = new List<GeminiDynamicQuestion>();
     }
 
@@ -147,43 +160,43 @@ namespace CodePlanner.Core
         [JsonPropertyName("id")]
         public string Id { get; set; } = "";
 
-        [JsonPropertyName("sekce")]
+        [JsonPropertyName("section")]
         public string Section { get; set; } = "";
 
-        [JsonPropertyName("dopad")]
-        public string Impact { get; set; } = "Stredni"; // Vysoky / Stredni
+        [JsonPropertyName("impact")]
+        public string Impact { get; set; } = "Medium"; // High / Medium
 
         [JsonPropertyName("text")]
         public string Text { get; set; } = "";
 
-        [JsonPropertyName("napoveda")]
+        [JsonPropertyName("helpText")]
         public string HelpText { get; set; } = "";
 
-        [JsonPropertyName("vychoziPredpoklad")]
+        [JsonPropertyName("defaultAssumption")]
         public string DefaultAssumption { get; set; } = "";
 
-        [JsonPropertyName("odpoved")]
+        [JsonPropertyName("answer")]
         public string Answer { get; set; } = "";
 
-        [JsonPropertyName("jePredpoklad")]
+        [JsonPropertyName("isAssumption")]
         public bool IsAssumption { get; set; }
 
-        [JsonPropertyName("moznosti")]
+        [JsonPropertyName("options")]
         public List<string> Options { get; set; } = new List<string>();
     }
 
     public class GeminiConsistencyResult
     {
-        [JsonPropertyName("nalezy")]
+        [JsonPropertyName("findings")]
         public List<GeminiConsistencyFinding> Findings { get; set; } = new List<GeminiConsistencyFinding>();
     }
 
     public class GeminiConsistencyFinding
     {
-        [JsonPropertyName("zavaznost")]
-        public string Severity { get; set; } = "Varovani";
+        [JsonPropertyName("severity")]
+        public string Severity { get; set; } = "Warning";
 
-        [JsonPropertyName("titulek")]
+        [JsonPropertyName("title")]
         public string Title { get; set; } = "";
 
         [JsonPropertyName("detail")]
@@ -201,17 +214,17 @@ namespace CodePlanner.Core
         [JsonPropertyName("id")]
         public string Id { get; set; } = "";
 
-        [JsonPropertyName("titulek")]
+        [JsonPropertyName("title")]
         public string Title { get; set; } = "";
 
-        [JsonPropertyName("popis")]
+        [JsonPropertyName("description")]
         public string Description { get; set; } = "";
 
-        [JsonPropertyName("kriteria")]
+        [JsonPropertyName("criteria")]
         public List<string> Criteria { get; set; } = new List<string>();
 
-        [JsonPropertyName("priorita")]
-        public string Priority { get; set; } = "Střední";
+        [JsonPropertyName("priority")]
+        public string Priority { get; set; } = "Medium";
     }
 
     /// <summary>
@@ -253,9 +266,15 @@ namespace CodePlanner.Core
             try
             {
                 string cesta = CestaPosledniAiOdpovedi;
-                string slozka = Path.GetDirectoryName(cesta);
+                string? slozka = Path.GetDirectoryName(cesta);
                 if (!string.IsNullOrEmpty(slozka)) Directory.CreateDirectory(slozka);
-                File.WriteAllText(cesta, surovaOdpoved ?? "", Encoding.UTF8);
+                
+                string zkracena = surovaOdpoved ?? "";
+                if (zkracena.Length > 100000)
+                {
+                    zkracena = zkracena.Substring(0, 100000) + "\r\n[Zkráceno z důvodu velikosti...]";
+                }
+                File.WriteAllText(cesta, zkracena, Encoding.UTF8);
             }
             catch
             {
@@ -270,7 +289,7 @@ namespace CodePlanner.Core
         private static T DeserializujAiOdpoved<T>(string surovaOdpoved) where T : class
         {
             string cleanText = CleanJson(surovaOdpoved);
-            T vysledek;
+            T? vysledek;
             try
             {
                 vysledek = JsonSerializer.Deserialize<T>(cleanText, AiJsonOpt);
@@ -278,14 +297,22 @@ namespace CodePlanner.Core
             catch (JsonException ex)
             {
                 UlozSurovouAiOdpoved(surovaOdpoved);
-                throw new Exception("AI vrátila odpověď v neočekávaném formátu. Zkuste akci zopakovat.", ex);
+                throw new Exception("AI returned an answer in an unexpected format. The diagnostic log has been saved to the settings folder (posledni_ai_odpoved.txt). Please try again.", ex);
             }
 
             if (vysledek == null)
             {
                 UlozSurovouAiOdpoved(surovaOdpoved);
-                throw new Exception("AI vrátila odpověď v neočekávaném formátu. Zkuste akci zopakovat.");
+                throw new Exception("AI returned an answer in an unexpected format. The diagnostic log has been saved to the settings folder (posledni_ai_odpoved.txt). Please try again.");
             }
+
+            // Smažeme diagnostickou odpověď z disku, pokud se deserializace podařila
+            try
+            {
+                string cesta = CestaPosledniAiOdpovedi;
+                if (File.Exists(cesta)) File.Delete(cesta);
+            }
+            catch { }
 
             return vysledek;
         }
@@ -361,13 +388,13 @@ namespace CodePlanner.Core
 
             try
             {
-                var response = await Client.SendAsync(requestMessage, cancellationToken);
+                using var response = await Client.SendAsync(requestMessage, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     string errContent = "";
                     try { errContent = await response.Content.ReadAsStringAsync(); } catch { }
                     
-                    string friendlyMsg = null;
+                    string? friendlyMsg = null;
                     if (!string.IsNullOrEmpty(errContent))
                     {
                         try
@@ -377,31 +404,31 @@ namespace CodePlanner.Core
                             {
                                 if (errorProp.TryGetProperty("message", out var msgProp))
                                 {
-                                    string origMsg = msgProp.GetString();
+                                    string? origMsg = msgProp.GetString();
                                     if (origMsg != null)
                                     {
                                         if (origMsg.Contains("API key not valid") || origMsg.Contains("API_KEY_INVALID") || origMsg.Contains("key is invalid"))
                                         {
-                                            friendlyMsg = "Zadaný API klíč je neplatný. Ověřte prosím správnost klíče v Nastavení AI.";
+                                            friendlyMsg = "The provided API key is invalid. Please verify your key in AI Settings.";
                                         }
                                         else if (origMsg.Contains("Quota exceeded") || origMsg.Contains("RESOURCE_EXHAUSTED") || origMsg.Contains("429"))
                                         {
-                                            friendlyMsg = "Byl překročen limit požadavků (Quota Exceeded / Rate Limit). Zkuste to prosím znovu za minutu.";
+                                            friendlyMsg = "Request limit exceeded (Quota Exceeded / Rate Limit). Please try again in a minute.";
                                         }
                                         else
                                         {
-                                            friendlyMsg = $"Chyba API: {origMsg}";
+                                            friendlyMsg = $"API Error: {origMsg}";
                                         }
                                     }
                                 }
-                            }
-                        }
+                             }
+                         }
                         catch { }
                     }
 
                     if (friendlyMsg == null)
                     {
-                        friendlyMsg = $"Gemini API vrátilo chybu {(int)response.StatusCode} ({response.ReasonPhrase}).";
+                        friendlyMsg = $"Gemini API returned error {(int)response.StatusCode} ({response.ReasonPhrase}).";
                         if (!string.IsNullOrEmpty(errContent)) friendlyMsg += $" Detail: {errContent}";
                     }
                     throw new GeminiApiException(friendlyMsg, (int)response.StatusCode);
@@ -412,7 +439,7 @@ namespace CodePlanner.Core
             }
             catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new TimeoutException("Požadavek na Gemini API vypršel. Zkontrolujte prosím připojení k internetu a stav Gemini služby.", ex);
+                throw new TimeoutException("The request to Gemini API timed out. Please check your internet connection and Gemini service status.", ex);
             }
         }
 
@@ -435,85 +462,86 @@ namespace CodePlanner.Core
             return textProp.GetString() ?? "";
         }
 
-        public static string SestavPrompt(string napad, string typProjektuKlic, string referencniText = null, bool maMockup = false)
+        public static string SestavPrompt(string napad, string typProjektuKlic, string? referencniText = null, bool maMockup = false)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Jsi expert na softwarovou analýzu a tvorbu zadání pro kódovací agenty.");
-            sb.AppendLine($"Tvým úkolem je analyzovat původní nápad uživatele na aplikaci typu \"{SpecificationService.GetProjectTypeName(typProjektuKlic)}\" a navrhnout:");
-            sb.AppendLine("1. Krátký, výstižný název projektu (maximálně 5 slov).");
-            sb.AppendLine("2. Seznam 7 až 10 doplňujících specifikačních otázek, které jsou ŠITÉ NA MÍRU tomuto konkrétmiu projektu a technické doméně.");
+            sb.AppendLine("You are an expert in software analysis and creating specifications for coding agents.");
+            sb.AppendLine($"Your task is to analyze the user's original idea for a \"{SpecificationService.GetProjectTypeName(typProjektuKlic)}\" application and propose:");
+            sb.AppendLine("1. A short, concise project name (maximum 5 words).");
+            sb.AppendLine("2. A list of 7 to 10 additional specification questions tailored specifically to this project and its technical domain.");
             sb.AppendLine();
-            sb.AppendLine("Pravidla pro otázky:");
-            sb.AppendLine("- Každá otázka must patřit do jedné z těchto sekcí: Cíl a uživatelé, Rozsah, UX, Data, Technika, Akceptace, Rizika.");
-            sb.AppendLine("- Otázky musí být konkrétní (např. u fitness aplikace se ptej na senzory/API, u e-shopu na platby, ne obecně).");
-            sb.AppendLine("- Každá otázka musí mít stanovený dopad (Vysoky pro architekturu/cenu/bezpečnost, Stredni pro UX/detaily).");
-            sb.AppendLine("- Pokud je to možné, použij pro příslušné otázky následující standardní identifikátory (IDs):");
-            sb.AppendLine("  * `cil-problem` (pro smysl/problém projektu)");
-            sb.AppendLine("  * `cil-uzivatele` (pro role/uživatele)");
-            sb.AppendLine("  * `tech-platforma` (pro platformu/jazyky)");
-            sb.AppendLine("  * `tech-offline` (pro offline/online režim)");
-            sb.AppendLine("  * `data-obsah` (pro ukládaná data/databázi)");
-            sb.AppendLine("  * `data-export` (pro export/tisk)");
-            sb.AppendLine("  * `rozsah-nongoals` (pro to, co se dělat nebude)");
-            sb.AppendLine("  * `akceptace` (pro kritéria dokončení)");
-            sb.AppendLine("  * `ux-obrazovky` (pro vzhled/obrazovky)");
-            sb.AppendLine("  * `rizika` (pro rizika a nejasnosti)");
-            sb.AppendLine("- Pokud projekt vyžaduje specifickou otázku mimo tyto standardní, vymysli pro ni nový výstižný identifikátor.");
-            sb.AppendLine("- Pro každou otázku navrhni:");
-            sb.AppendLine("  a) Nápovědu pro uživatele (jak o otázce přemýšlet).");
-            sb.AppendLine("  b) Výchozí doporučený předpoklad (default assumption), který použijeme, pokud uživatel nebude vědět.");
-            sb.AppendLine("  c) Odpověď šitou na míru: Pokud z původního nápadu uživatele vyplývá odpověď, formuluj ji a nastav \"jePredpoklad\": false. Pokud informace v nápadu chybí, vlož text výchozího předpokladu a nastav \"jePredpoklad\": true.");
-            sb.AppendLine("  d) Přesně 3 krátké, konkrétní typické možnosti rychlé odpovědi (pole stringů `moznosti`), které uživatel může vybrat (např. [\"SQLite local DB\", \"PostgreSQL v cloudu\", \"Ukládání do JSON souborů\"]).");
+            sb.AppendLine("Rules for questions:");
+            sb.AppendLine("- Each question must belong to one of these sections: Target & Users, Scope, UX, Data, Technology, Acceptance, Risks.");
+            sb.AppendLine("- Questions must be specific (e.g. for a fitness app ask about sensors/APIs, for an e-shop ask about payment gateways, not generic questions).");
+            sb.AppendLine("- Each question must have a specified impact (High for architecture/pricing/security, Medium for UX/minor details).");
+            sb.AppendLine("- If applicable, reuse the following standard identifiers (IDs) to map them to these domains:");
+            sb.AppendLine("  * `cil-problem` (for project purpose/main problem)");
+            sb.AppendLine("  * `cil-uzivatele` (for roles/users)");
+            sb.AppendLine("  * `tech-platforma` (for target platform/languages)");
+            sb.AppendLine("  * `tech-offline` (for offline/online mode)");
+            sb.AppendLine("  * `data-obsah` (for stored data/database)");
+            sb.AppendLine("  * `data-export` (for export/print)");
+            sb.AppendLine("  * `rozsah-nongoals` (for what the application will definitely NOT do)");
+            sb.AppendLine("  * `akceptace` (for completion criteria)");
+            sb.AppendLine("  * `ux-styl` (for visual style/DPI/screens)");
+            sb.AppendLine("  * `rizika-reseni` (for risks and mitigation)");
+            sb.AppendLine("- If the project requires a specific question outside of these standard ones, create a new descriptive identifier for it.");
+            sb.AppendLine("- For each question, propose:");
+            sb.AppendLine("  a) A help text for the user (how to think about the question).");
+            sb.AppendLine("  b) A default recommended assumption to use if the user does not know.");
+            sb.AppendLine("  c) A tailored answer: If the user's original idea implies an answer, formulate it and set \"isAssumption\": false. If the information is missing from the idea, fill in the default assumption text and set \"isAssumption\": true.");
+            sb.AppendLine("  d) Exactly 3 short, concrete options for a quick answer (array of strings named \"options\") that the user can select (e.g. [\"SQLite local DB\", \"PostgreSQL in cloud\", \"JSON files local storage\"]).");
+            sb.AppendLine("- Write all generated questions, help texts, default assumptions, options, and answers in Czech, because the user speaks Czech.");
             sb.AppendLine();
-            sb.AppendLine("Zde jsou základní standardní otázky a jejich výchozí texty pro inspiraci:");
+            sb.AppendLine("Here are the standard template questions for your inspiration:");
 
             foreach (var ot in StandardQuestions.All)
             {
-                sb.AppendLine($"- Výchozí ID: {ot.Id}");
-                sb.AppendLine($"  Výchozí sekce: {ot.Section}");
-                sb.AppendLine($"  Výchozí otázka: {ot.GetText(typProjektuKlic)}");
-                sb.AppendLine($"  Výchozí předpoklad: {ot.GetDefaultAssumption(typProjektuKlic)}");
+                sb.AppendLine($"- Default ID: {ot.Id}");
+                sb.AppendLine($"  Default section: {ot.Section}");
+                sb.AppendLine($"  Default question: {ot.GetText(typProjektuKlic)}");
+                sb.AppendLine($"  Default assumption: {ot.GetDefaultAssumption(typProjektuKlic)}");
             }
 
             sb.AppendLine();
-            sb.AppendLine("Odpověz výhradně ve formátu JSON podle tohoto schématu. Nevracej žádný jiný text, pouze tento JSON. Nepoužívej markdown obal typu ```json a ```.");
+            sb.AppendLine("Respond exclusively in JSON format matching the following schema. Return only the raw JSON. Do not wrap it in markdown code blocks like ```json.");
             sb.AppendLine("{");
-            sb.AppendLine("  \"nazev\": \"Navržený název projektu\",");
-            sb.AppendLine("  \"otazky\": [");
+            sb.AppendLine("  \"name\": \"Suggested project name\",");
+            sb.AppendLine("  \"questions\": [");
             sb.AppendLine("    {");
-            sb.AppendLine("      \"id\": \"identifikator-otazky\",");
-            sb.AppendLine("      \"sekce\": \"Název sekce\",");
-            sb.AppendLine("      \"dopad\": \"Vysoky\" nebo \"Stredni\",");
-            sb.AppendLine("      \"text\": \"Znění otázky na míru\",");
-            sb.AppendLine("      \"napoveda\": \"Nápověda k otázce na míru\",");
-            sb.AppendLine("      \"vychoziPredpoklad\": \"Výchozí předpoklad na míru\",");
-            sb.AppendLine("      \"moznosti\": [\"rychlá volba 1\", \"rychlá volba 2\", \"rychlá volba 3\"],");
-            sb.AppendLine("      \"odpoved\": \"Navržená odpověď nebo text výchozího předpokladu na míru\",");
-            sb.AppendLine("      \"jePredpoklad\": true nebo false");
+            sb.AppendLine("      \"id\": \"question-identifier\",");
+            sb.AppendLine("      \"section\": \"Section Name (Target & Users, Scope, UX, Data, Technology, Acceptance, or Risks)\",");
+            sb.AppendLine("      \"impact\": \"High\" or \"Medium\",");
+            sb.AppendLine("      \"text\": \"Tailored question in Czech\",");
+            sb.AppendLine("      \"helpText\": \"Tailored help text in Czech\",");
+            sb.AppendLine("      \"defaultAssumption\": \"Tailored default assumption in Czech\",");
+            sb.AppendLine("      \"options\": [\"quick choice 1 in Czech\", \"quick choice 2 in Czech\", \"quick choice 3 in Czech\"],");
+            sb.AppendLine("      \"answer\": \"Suggested answer or default assumption text in Czech\",");
+            sb.AppendLine("      \"isAssumption\": true or false");
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             sb.AppendLine();
-            sb.AppendLine("Zde je původní nápad uživatele:");
+            sb.AppendLine("Here is the user's original idea:");
             sb.AppendLine(napad);
 
             if (!string.IsNullOrWhiteSpace(referencniText))
             {
                 sb.AppendLine();
-                sb.AppendLine("Uživatel přiložil také následující referenční podklady k projektu. Použij je k přesnějšímu nastavení otázek a odpovědí:");
+                sb.AppendLine("The user has also attached the following reference material for the project. Use it to provide more precise questions and answers:");
                 sb.AppendLine(OrezText(referencniText));
             }
 
             if (maMockup)
             {
                 sb.AppendLine();
-                sb.AppendLine("Uživatel přiložil také nákres / screenshot rozhraní (mockup) jako obrázek. Prozkoumej tento obrázek a využij ho k přesnějšímu nastavení otázek a odpovědí, aby odpovídaly vizuálnímu návrhu rozhraní.");
+                sb.AppendLine("The user has also attached a UI mockup/screenshot as an image. Inspect this image and use it to adjust the questions, help texts, and answers so they align with the visual mockup.");
             }
 
             return sb.ToString();
         }
 
-        public static async Task<GeminiDynamicResult> AnalyzeIdeaAsync(string apiKey, string model, string napad, string typProjektuKlic, string referencniText = null, string mockupBase64 = null, string mockupMime = null, CancellationToken cancellationToken = default)
+        public static async Task<GeminiDynamicResult> AnalyzeIdeaAsync(string apiKey, string model, string napad, string typProjektuKlic, string? referencniText = null, string? mockupBase64 = null, string? mockupMime = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new ArgumentException("API klíč pro Gemini nesmí být prázdný.");
@@ -557,7 +585,14 @@ namespace CodePlanner.Core
             if (string.IsNullOrWhiteSpace(textResponse))
                 throw new Exception("Odpověď z Gemini API je prázdná.");
 
-            return DeserializujAiOdpoved<GeminiDynamicResult>(textResponse);
+            var result = DeserializujAiOdpoved<GeminiDynamicResult>(textResponse);
+            if (result == null) throw new Exception("AI vrátila prázdný výsledek.");
+            if (result.Questions == null) result.Questions = new List<GeminiDynamicQuestion>();
+            
+            // Odstraníme otázky bez ID nebo bez textu
+            result.Questions.RemoveAll(q => string.IsNullOrWhiteSpace(q.Id) || string.IsNullOrWhiteSpace(q.Text));
+            if (result.Questions.Count == 0) throw new Exception("AI analýza nevrátila žádné platné otázky.");
+            return result;
         }
 
         public static async Task<string> TranscribeAudioAsync(string apiKey, string model, string cestaWav, CancellationToken cancellationToken = default)
@@ -603,30 +638,31 @@ namespace CodePlanner.Core
         public static async Task<List<ConsistencyFinding>> AnalyzeConsistencyAsync(string apiKey, string model, ProjectSpecification projekt, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("API klíč pro Gemini nesmí být prázdný.");
+                throw new ArgumentException("API key for Gemini cannot be empty.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("Jsi expert na softwarovou architekturu a analýzu požadavků.");
-            sb.AppendLine("Tvým úkolem je analyzovat následující specifikaci projektu a najít jakékoliv logické rozpory, technické nesrovnalosti, bezpečnostní mezery nebo chybějící vazby mezi požadavky a navrženými odpověďmi.");
+            sb.AppendLine("You are an expert in software architecture and requirements analysis.");
+            sb.AppendLine("Your task is to analyze the following project specification and find any logical conflicts, technical inconsistencies, security gaps, or missing links between requirements and proposed answers.");
             sb.AppendLine();
-            sb.AppendLine("Zaměř se na:");
-            sb.AppendLine("1. Skutečné logické rozpory (např. v jedné otázce se tvrdí, že data budou jen lokálně, v jiné se mluví o synchronizaci přes server).");
-            sb.AppendLine("2. Technické nesrovnalosti (např. databáze SQLite pro čistě webovou aplikaci bez serveru, nebo platby kartou bez zmínky o zabezpečení/SSL).");
-            sb.AppendLine("3. Zásadní mezery (např. v uživatelích se definuje role 'Administrátor', ale v právech/bezpečnosti chybí přihlašování).");
-            sb.AppendLine("4. Nerealistické nebo vágní plány.");
+            sb.AppendLine("Focus on:");
+            sb.AppendLine("1. True logical conflicts (e.g. one answer says data is purely local, another talks about server sync).");
+            sb.AppendLine("2. Technical inconsistencies (e.g. SQLite database for a serverless web app, or credit card payments without SSL/security).");
+            sb.AppendLine("3. Critical gaps (e.g. users define 'Administrator' role but authentication is missing).");
+            sb.AppendLine("4. Unrealistic or vague plans.");
+            sb.AppendLine("- Write the title and detail of each finding in Czech because the user speaks Czech.");
             sb.AppendLine();
-            sb.AppendLine("Odpověz výhradně ve formátu JSON podle tohoto schématu. Nevracej žádný jiný text, pouze tento JSON. Nepoužívej markdown obal.");
+            sb.AppendLine("Respond exclusively in JSON format matching the following schema. Return only the raw JSON. Do not wrap it in markdown code blocks.");
             sb.AppendLine("{");
-            sb.AppendLine("  \"nalezy\": [");
+            sb.AppendLine("  \"findings\": [");
             sb.AppendLine("    {");
-            sb.AppendLine("      \"zavaznost\": \"Rozpor\" nebo \"Varovani\",");
-            sb.AppendLine("      \"titulek\": \"Název problému\",");
-            sb.AppendLine("      \"detail\": \"Podrobný popis rozporu nebo mezery a návrh řešení.\"");
+            sb.AppendLine("      \"severity\": \"Conflict\" or \"Warning\",");
+            sb.AppendLine("      \"title\": \"Title of the problem in Czech\",");
+            sb.AppendLine("      \"detail\": \"Detailed description of the conflict or gap and suggested resolution in Czech.\"");
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             sb.AppendLine();
-            sb.AppendLine("Zde je kompletní specifikace projektu:");
+            sb.AppendLine("Here is the complete project specification:");
             sb.AppendLine(OrezText(SpecificationService.RenderMarkdown(projekt)));
 
             var requestBody = new
@@ -651,15 +687,16 @@ namespace CodePlanner.Core
             var vysledek = DeserializujAiOdpoved<GeminiConsistencyResult>(textResponse);
 
             var findings = new List<ConsistencyFinding>();
-            if (vysledek.Findings != null)
+            if (vysledek != null && vysledek.Findings != null)
             {
                 foreach (var n in vysledek.Findings)
                 {
+                    if (string.IsNullOrWhiteSpace(n.Title)) continue;
                     findings.Add(new ConsistencyFinding
                     {
-                        Severity = string.Equals(n.Severity, "Rozpor", StringComparison.OrdinalIgnoreCase) ? Severity.Conflict : Severity.Warning,
-                        Title = n.Title ?? "",
-                        Detail = n.Detail ?? ""
+                        Severity = string.Equals(n.Severity, "Conflict", StringComparison.OrdinalIgnoreCase) || string.Equals(n.Severity, "Rozpor", StringComparison.OrdinalIgnoreCase) ? Severity.Conflict : Severity.Warning,
+                        Title = n.Title.Trim(),
+                        Detail = (n.Detail ?? "").Trim()
                     });
                 }
             }
@@ -670,36 +707,37 @@ namespace CodePlanner.Core
         public static async Task<List<UserStory>> GenerateUserStoriesAsync(string apiKey, string model, ProjectSpecification projekt, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("API klíč pro Gemini nesmí být prázdný.");
+                throw new ArgumentException("API key for Gemini cannot be empty.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("Jsi agilní kouč a softwarový analytik.");
-            sb.AppendLine("Tvým úkolem je na základě níže uvedené specifikace projektu navrhnout sadu konkrétních, realizovatelných a srozumitelných User Stories pro vývojáře.");
+            sb.AppendLine("You are an agile coach and software analyst.");
+            sb.AppendLine("Your task is to propose a set of concrete, actionable, and clear User Stories for developers based on the project specification below.");
             sb.AppendLine();
-            sb.AppendLine("Pro každou User Story definuj:");
-            sb.AppendLine("1. Jedinečný identifikátor (např. US-01, US-02). Generuj jich 8 až 15 podle rozsahu aplikace.");
-            sb.AppendLine("2. Stručný, výstižný titulek.");
-            sb.AppendLine("3. Popis ve standardním formátu: 'Jako [role] chci [funkce], abych [přínos].'");
-            sb.AppendLine("4. Seznam 3 až 6 konkrétních a testovatelných Akceptačních kritérií (Acceptance Criteria).");
-            sb.AppendLine("5. Prioritu: 'Vysoká', 'Střední', nebo 'Nízká'.");
+            sb.AppendLine("For each User Story, define:");
+            sb.AppendLine("1. A unique identifier (e.g. US-01, US-02). Generate between 8 and 15 stories depending on the scope.");
+            sb.AppendLine("2. A short, concise title.");
+            sb.AppendLine("3. Description in the standard format: 'Jako [role] chci [funkce], abych [přínos].' (write this in Czech).");
+            sb.AppendLine("4. A list of 3 to 6 concrete, testable Acceptance Criteria (write these in Czech).");
+            sb.AppendLine("5. Priority: 'High', 'Medium', or 'Low'.");
+            sb.AppendLine("- All titles, descriptions, and criteria must be written in Czech because the user speaks Czech.");
             sb.AppendLine();
-            sb.AppendLine("Odpověz výhradně ve formátu JSON podle tohoto schématu. Nevracej žádný jiný text, pouze tento JSON. Nepoužívej markdown obal.");
+            sb.AppendLine("Respond exclusively in JSON format matching the following schema. Return only the raw JSON. Do not wrap it in markdown code blocks.");
             sb.AppendLine("{");
             sb.AppendLine("  \"stories\": [");
             sb.AppendLine("    {");
             sb.AppendLine("      \"id\": \"US-01\",");
-            sb.AppendLine("      \"titulek\": \"Název user story\",");
-            sb.AppendLine("      \"popis\": \"Jako... chci... abych...\",");
-            sb.AppendLine("      \"kriteria\": [");
-            sb.AppendLine("        \"kritérium 1\",");
-            sb.AppendLine("        \"kritérium 2\"");
+            sb.AppendLine("      \"title\": \"Title of the user story in Czech\",");
+            sb.AppendLine("      \"description\": \"Jako... chci... abych... in Czech\",");
+            sb.AppendLine("      \"criteria\": [");
+            sb.AppendLine("        \"criterion 1 in Czech\",");
+            sb.AppendLine("        \"criterion 2 in Czech\"");
             sb.AppendLine("      ],");
-            sb.AppendLine("      \"priorita\": \"Vysoká\"");
+            sb.AppendLine("      \"priority\": \"High\", \"Medium\", or \"Low\"");
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             sb.AppendLine();
-            sb.AppendLine("Zde je kompletní specifikace projektu:");
+            sb.AppendLine("Here is the complete project specification:");
             sb.AppendLine(OrezText(SpecificationService.RenderMarkdown(projekt)));
 
             var requestBody = new
@@ -724,17 +762,34 @@ namespace CodePlanner.Core
             var vysledek = DeserializujAiOdpoved<GeminiUserStoriesResult>(textResponse);
 
             var stories = new List<UserStory>();
-            if (vysledek.Stories != null)
+            if (vysledek != null && vysledek.Stories != null)
             {
+                var pouzitaId = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var s in vysledek.Stories)
                 {
+                    if (string.IsNullOrWhiteSpace(s.Id) || string.IsNullOrWhiteSpace(s.Title)) continue;
+                    
+                    string idClean = s.Id.Trim();
+                    if (pouzitaId.Contains(idClean)) continue;
+                    pouzitaId.Add(idClean);
+
+                    string prioMapped = "Medium";
+                    if (string.Equals(s.Priority, "High", StringComparison.OrdinalIgnoreCase) || string.Equals(s.Priority, "Vysoká", StringComparison.OrdinalIgnoreCase))
+                    {
+                        prioMapped = "High";
+                    }
+                    else if (string.Equals(s.Priority, "Low", StringComparison.OrdinalIgnoreCase) || string.Equals(s.Priority, "Nízká", StringComparison.OrdinalIgnoreCase))
+                    {
+                        prioMapped = "Low";
+                    }
+
                     stories.Add(new UserStory
                     {
-                        Id = s.Id ?? "",
-                        Title = s.Title ?? "",
-                        Description = s.Description ?? "",
+                        Id = idClean,
+                        Title = s.Title.Trim(),
+                        Description = (s.Description ?? "").Trim(),
                         Criteria = s.Criteria ?? new List<string>(),
-                        Priority = s.Priority ?? "Střední"
+                        Priority = prioMapped
                     });
                 }
             }
@@ -808,33 +863,33 @@ namespace CodePlanner.Core
         public static async Task<ProjectMetrics> GenerateMetricsAsync(string apiKey, string model, ProjectSpecification projekt, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("API klíč pro Gemini nesmí být prázdný.");
+                throw new ArgumentException("API key for Gemini cannot be empty.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("Jsi seniorní projektový manažer, IT architekt a odhadce softwarových projektů.");
-            sb.AppendLine("Tvým úkolem je na základě kompletní specifikace a parametrů projektu provést odhad pracnosti, navrhnout složení týmu, doporučit rozpočet a vypracovat technický rozbor.");
+            sb.AppendLine("You are a senior project manager, IT architect, and software estimator.");
+            sb.AppendLine("Your task is to analyze the complete project specification and parameters to estimate effort, suggest team composition, recommend a budget, and write a technical breakdown.");
             sb.AppendLine();
-            sb.AppendLine("Odpověz výhradně ve formátu JSON podle následujícího schématu. Nevracej žádný jiný doprovodný text, pouze tento JSON. Nepoužívej markdown obal typu ```json a ```.");
+            sb.AppendLine("Respond exclusively in JSON format matching the following schema. Return only the raw JSON. Do not wrap it in markdown code blocks.");
             sb.AppendLine("{");
-            sb.AppendLine("  \"casovyOdhadMin\": \"Např. 80 hodin\",");
-            sb.AppendLine("  \"casovyOdhadMax\": \"Např. 120 hodin\",");
-            sb.AppendLine("  \"komplexita\": \"Nízká\", \"Střední\" nebo \"Vysoká\",");
-            sb.AppendLine("  \"slozeniTymu\": \"Doporučené složení vývojářů a testerů\",");
-            sb.AppendLine("  \"doporucenyRozpocet\": \"Např. 100 000 - 150 000 Kč\",");
-            sb.AppendLine("  \"technickyRozbor\": \"Stručné odrážky s doporučením pro architekturu, technologie a databáze\",");
-            sb.AppendLine("  \"rizikaMetriky\": [\"riziko 1\", \"riziko 2\", \"riziko 3\"]");
+            sb.AppendLine("  \"timeEstimateMin\": \"E.g. 80 hours\",");
+            sb.AppendLine("  \"timeEstimateMax\": \"E.g. 120 hours\",");
+            sb.AppendLine("  \"complexity\": \"Low\", \"Medium\", or \"High\",");
+            sb.AppendLine("  \"teamComposition\": \"Recommended developer and tester roles in Czech\",");
+            sb.AppendLine("  \"recommendedBudget\": \"E.g. 100 000 - 150 000 CZK in Czech\",");
+            sb.AppendLine("  \"technicalAnalysis\": \"Short bullet points with recommendations for architecture, technologies, and databases in Czech\",");
+            sb.AppendLine("  \"metricRisks\": [\"risk 1 in Czech\", \"risk 2 in Czech\", \"risk 3 in Czech\"]");
             sb.AppendLine("}");
             sb.AppendLine();
-            sb.AppendLine("Zde je aktuální specifikace projektu:");
+            sb.AppendLine("Here is the current project specification:");
             sb.AppendLine(OrezText(SpecificationService.RenderMarkdown(projekt)));
 
             if (projekt.UserStories != null && projekt.UserStories.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("Zde je seznam agilních User Stories pro přesnější odhad:");
+                sb.AppendLine("Here is the list of agile User Stories for a more accurate estimate:");
                 foreach (var us in projekt.UserStories)
                 {
-                    sb.AppendLine($"- {us.Id}: {us.Title} (Priorita: {us.Priority})");
+                    sb.AppendLine($"- {us.Id}: {us.Title} (Priority: {us.Priority})");
                 }
             }
 
@@ -858,16 +913,27 @@ namespace CodePlanner.Core
 
             string textResponse = await PosliGeminiRequestAsync(apiKey, model, requestBody, cancellationToken);
             var vysledek = DeserializujAiOdpoved<GeminiMetricsResult>(textResponse);
+            if (vysledek == null) throw new Exception("AI returned empty result for metrics.");
+
+            string compMapped = "Medium";
+            if (string.Equals(vysledek.Complexity, "High", StringComparison.OrdinalIgnoreCase) || string.Equals(vysledek.Complexity, "Vysoká", StringComparison.OrdinalIgnoreCase))
+            {
+                compMapped = "High";
+            }
+            else if (string.Equals(vysledek.Complexity, "Low", StringComparison.OrdinalIgnoreCase) || string.Equals(vysledek.Complexity, "Nízká", StringComparison.OrdinalIgnoreCase))
+            {
+                compMapped = "Low";
+            }
 
             return new ProjectMetrics
             {
-                TimeEstimateMin = vysledek.TimeEstimateMin ?? "",
-                TimeEstimateMax = vysledek.TimeEstimateMax ?? "",
-                Complexity = vysledek.Complexity ?? "Střední",
-                TeamComposition = vysledek.TeamComposition ?? "",
-                RecommendedBudget = vysledek.RecommendedBudget ?? "",
-                TechnicalAnalysis = vysledek.TechnicalAnalysis ?? "",
-                MetricRisks = vysledek.MetricRisks ?? new List<string>(),
+                TimeEstimateMin = (vysledek.TimeEstimateMin ?? "").Trim(),
+                TimeEstimateMax = (vysledek.TimeEstimateMax ?? "").Trim(),
+                Complexity = compMapped,
+                TeamComposition = (vysledek.TeamComposition ?? "").Trim(),
+                RecommendedBudget = (vysledek.RecommendedBudget ?? "").Trim(),
+                TechnicalAnalysis = (vysledek.TechnicalAnalysis ?? "").Trim(),
+                MetricRisks = (vysledek.MetricRisks ?? new List<string>()).Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r.Trim()).ToList(),
                 CalculationTimestamp = DateTime.Now
             };
         }
@@ -876,26 +942,26 @@ namespace CodePlanner.Core
 
     public class GeminiMetricsResult
     {
-        [JsonPropertyName("casovyOdhadMin")]
+        [JsonPropertyName("timeEstimateMin")]
         public string TimeEstimateMin { get; set; } = "";
 
-        [JsonPropertyName("casovyOdhadMax")]
+        [JsonPropertyName("timeEstimateMax")]
         public string TimeEstimateMax { get; set; } = "";
 
-        [JsonPropertyName("komplexita")]
+        [JsonPropertyName("complexity")]
         public string Complexity { get; set; } = "";
 
-        [JsonPropertyName("slozeniTymu")]
+        [JsonPropertyName("teamComposition")]
         public string TeamComposition { get; set; } = "";
 
-        [JsonPropertyName("doporucenyRozpocet")]
+        [JsonPropertyName("recommendedBudget")]
         public string RecommendedBudget { get; set; } = "";
 
-        [JsonPropertyName("technickyRozbor")]
+        [JsonPropertyName("technicalAnalysis")]
         public string TechnicalAnalysis { get; set; } = "";
 
-        [JsonPropertyName("rizikaMetriky")]
+        [JsonPropertyName("metricRisks")]
         public List<string> MetricRisks { get; set; } = new List<string>();
     }
 }
-// konec souboru
+// end of file

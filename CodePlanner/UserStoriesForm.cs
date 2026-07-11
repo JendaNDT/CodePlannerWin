@@ -12,20 +12,20 @@ namespace CodePlanner
     public class UserStoriesForm : Form
     {
         private readonly List<UserStory> _stories;
-        private readonly string _apiKey;
-        private readonly string _model;
+        private string? _apiKey;
+        private string? _model;
         private readonly ProjectSpecification _project;
         private readonly Action _onZmena;
 
-        private ListBox lstStories;
-        private RichTextBox rtbDetail;
-        private Label lblStatus;
-        private Button btnAiStories;
-        private Button btnExportMd;
-        private Button btnExportCsv;
-        private CancellationTokenSource _cts = null;
+        private ListBox lstStories = default!;
+        private RichTextBox rtbDetail = default!;
+        private Label lblStatus = default!;
+        private Button btnAiStories = default!;
+        private Button btnExportMd = default!;
+        private Button btnExportCsv = default!;
+        private CancellationTokenSource? _cts = null;
 
-        public UserStoriesForm(List<UserStory> stories, string apiKey, string model, ProjectSpecification project, Action onZmena)
+        public UserStoriesForm(List<UserStory> stories, string? apiKey, string? model, ProjectSpecification project, Action onZmena)
         {
             _stories = stories;
             _apiKey = apiKey;
@@ -33,8 +33,9 @@ namespace CodePlanner
             _project = project;
             _onZmena = onZmena;
 
-            Text = "Uživatelské příběhy (User Stories)";
+            Text = "User Stories";
             Size = new Size(850, 580);
+            MinimumSize = new Size(750, 450);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             StartPosition = FormStartPosition.CenterParent;
@@ -51,7 +52,7 @@ namespace CodePlanner
 
         private void PostavUI()
         {
-            // 1. Hlavička
+            // 1. Header
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
@@ -60,7 +61,7 @@ namespace CodePlanner
             };
             var lblTitle = new Label
             {
-                Text = "💡 Uživatelské příběhy (User Stories / Backlog)",
+                Text = "💡 User Stories / Backlog",
                 Font = DesignSystem.HeaderLarge,
                 ForeColor = Color.White,
                 Location = new Point(16, 16),
@@ -68,7 +69,7 @@ namespace CodePlanner
             };
             pnlHeader.Controls.Add(lblTitle);
 
-            // 2. Dolní lišta s tlačítky
+            // 2. Footer with buttons
             var pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -78,7 +79,7 @@ namespace CodePlanner
 
             lblStatus = new Label
             {
-                Text = "Načteno",
+                Text = "Loaded",
                 ForeColor = DesignSystem.SedaText,
                 Location = new Point(16, 18),
                 AutoSize = true,
@@ -87,7 +88,7 @@ namespace CodePlanner
 
             btnAiStories = new Button
             {
-                Text = "🤖 Generovat přes Gemini",
+                Text = "🤖 Generate with Gemini",
                 Height = 32,
                 AutoSize = true,
                 BackColor = DesignSystem.Navy,
@@ -101,13 +102,12 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                btnAiStories.Enabled = false;
-                btnAiStories.Text = "🤖 Generovat (chybí API klíč)";
+                btnAiStories.Text = "🔑 Configure API Key";
             }
 
             btnExportMd = new Button
             {
-                Text = "⬇ Export Markdown…",
+                Text = "⬇ Export Markdown...",
                 Height = 32,
                 Width = 135,
                 FlatStyle = FlatStyle.Flat,
@@ -120,7 +120,7 @@ namespace CodePlanner
 
             btnExportCsv = new Button
             {
-                Text = "⬇ Export CSV (Jira/Trello)…",
+                Text = "⬇ Export CSV (Jira/Trello)...",
                 Height = 32,
                 Width = 175,
                 FlatStyle = FlatStyle.Flat,
@@ -133,7 +133,7 @@ namespace CodePlanner
 
             var btnZavrit = new Button
             {
-                Text = "Zavřít",
+                Text = "Close",
                 Height = 32,
                 Width = 80,
                 FlatStyle = FlatStyle.Flat,
@@ -143,7 +143,7 @@ namespace CodePlanner
             btnZavrit.FlatAppearance.BorderColor = Color.Silver;
             btnZavrit.Click += (s, e) => Close();
 
-            // Klávesa ESC pro zavření
+            // ESC key to close
             this.CancelButton = btnZavrit;
 
             var flowButtons = new FlowLayoutPanel
@@ -162,7 +162,7 @@ namespace CodePlanner
             pnlFooter.Controls.Add(flowButtons);
             pnlFooter.Controls.Add(lblStatus);
 
-            // 3. Středová část – SplitContainer
+            // 3. Center - SplitContainer
             var split = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -194,6 +194,11 @@ namespace CodePlanner
             Controls.Add(split);
             Controls.Add(pnlHeader);
             Controls.Add(pnlFooter);
+
+            FormClosing += (s, e) =>
+            {
+                try { _cts?.Cancel(); _cts?.Dispose(); } catch { }
+            };
         }
 
         private void NaplnStories()
@@ -202,7 +207,7 @@ namespace CodePlanner
             lstStories.Items.Clear();
             foreach (var s in _stories)
             {
-                string prioritaTag = s.Priority == "Vysoká" ? "🔴 " : (s.Priority == "Střední" ? "🟡 " : "🟢 ");
+                string prioritaTag = (s.Priority == "High" || s.Priority == "Vysoká") ? "🔴 " : ((s.Priority == "Medium" || s.Priority == "Střední") ? "🟡 " : "🟢 ");
                 lstStories.Items.Add($"{prioritaTag}{s.Id}: {s.Title}");
             }
             lstStories.EndUpdate();
@@ -210,20 +215,20 @@ namespace CodePlanner
             if (_stories.Count > 0)
             {
                 lstStories.SelectedIndex = 0;
-                lblStatus.Text = $"Načteno {_stories.Count} User Stories.";
+                lblStatus.Text = $"Loaded {_stories.Count} User Stories.";
                 btnExportMd.Enabled = true;
                 btnExportCsv.Enabled = true;
             }
             else
             {
-                rtbDetail.Text = "Zatím nebyly vygenerovány žádné User Stories.\n\nKlikněte na tlačítko \"🤖 Generovat přes Gemini\" pro vytvoření agilního backlogu na základě aktuální specifikace.";
-                lblStatus.Text = "Žádné User Stories k dispozici.";
+                rtbDetail.Text = "No User Stories have been generated yet.\n\nClick the \"🤖 Generate with Gemini\" (or \"🔑 Configure API Key\") button to create an agile backlog based on the current specification.";
+                lblStatus.Text = "No User Stories available.";
                 btnExportMd.Enabled = false;
                 btnExportCsv.Enabled = false;
             }
         }
 
-        private void LstStories_SelectedIndexChanged(object sender, EventArgs e)
+        private void LstStories_SelectedIndexChanged(object? sender, EventArgs e)
         {
             int idx = lstStories.SelectedIndex;
             if (idx < 0 || idx >= _stories.Count)
@@ -241,14 +246,14 @@ namespace CodePlanner
 
             rtbDetail.SelectionFont = DesignSystem.BodyBold;
             rtbDetail.SelectionColor = DesignSystem.SedaText;
-            rtbDetail.AppendText("Priorita: ");
+            rtbDetail.AppendText("Priority: ");
             rtbDetail.SelectionFont = DesignSystem.BodyBold;
-            rtbDetail.SelectionColor = s.Priority == "Vysoká" ? DesignSystem.Cervena : (s.Priority == "Střední" ? DesignSystem.Oranzova : DesignSystem.Zelena);
+            rtbDetail.SelectionColor = s.Priority == "High" ? DesignSystem.Cervena : (s.Priority == "Medium" ? DesignSystem.Oranzova : DesignSystem.Zelena);
             rtbDetail.AppendText($"{s.Priority}\n\n");
 
             rtbDetail.SelectionFont = DesignSystem.CardHeader;
             rtbDetail.SelectionColor = DesignSystem.Navy;
-            rtbDetail.AppendText("Uživatelský příběh (User Story)\n");
+            rtbDetail.AppendText("User Story\n");
             
             rtbDetail.SelectionFont = DesignSystem.BodyItalic;
             rtbDetail.SelectionColor = Color.FromArgb(50, 50, 50);
@@ -256,7 +261,7 @@ namespace CodePlanner
 
             rtbDetail.SelectionFont = DesignSystem.CardHeader;
             rtbDetail.SelectionColor = DesignSystem.Navy;
-            rtbDetail.AppendText("Akceptační kritéria (Acceptance Criteria)\n");
+            rtbDetail.AppendText("Acceptance Criteria\n");
 
             rtbDetail.SelectionFont = DesignSystem.Body;
             rtbDetail.SelectionColor = Color.Black;
@@ -266,8 +271,26 @@ namespace CodePlanner
             }
         }
 
-        private async void BtnAiStories_Click(object sender, EventArgs e)
+        private async void BtnAiStories_Click(object? sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(_apiKey))
+            {
+                using (var settingsDlg = new SettingsForm())
+                {
+                    if (settingsDlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var nast = GeminiSettings.Load();
+                        _apiKey = nast.EffectiveApiKey;
+                        _model = nast.GeminiModel;
+                        if (!string.IsNullOrWhiteSpace(_apiKey))
+                        {
+                            btnAiStories.Text = "🤖 Generovat přes Gemini";
+                        }
+                    }
+                }
+                return;
+            }
+
             if (_cts != null)
             {
                 _cts.Cancel();
@@ -275,40 +298,43 @@ namespace CodePlanner
             }
 
             Cursor = Cursors.WaitCursor;
-            btnAiStories.Text = "❌ Zrušit generování";
+            btnAiStories.Text = "❌ Cancel Generation";
             btnAiStories.Enabled = true;
-            lblStatus.Text = "Volám Gemini API, chvíli strpení...";
+            lblStatus.Text = "Calling Gemini API, please wait...";
             _cts = new CancellationTokenSource();
 
             try
             {
-                var noveStories = await GeminiService.GenerateUserStoriesAsync(_apiKey, _model, _project, _cts.Token);
+                var noveStories = await GeminiService.GenerateUserStoriesAsync(_apiKey, _model ?? "gemini-2.5-flash", _project, _cts.Token);
                 if (this.IsDisposed || !this.Created) return;
                 _stories.Clear();
                 _stories.AddRange(noveStories);
 
-                // Zaznamenáme akci do logu
+                // Set stories generation timestamp
+                _project.StoriesGenerationTimestamp = DateTime.Now;
+
+                // Log the action
                 _project.ChangeLog.Add(new DecisionLogEntry
                 {
                     Timestamp = DateTime.Now,
                     Action = "User Stories",
-                    Detail = $"Vygenerováno {_stories.Count} uživatelských příběhů přes Gemini."
+                    Detail = $"Generated {_stories.Count} user stories via Gemini."
                 });
 
-                _onZmena(); // Uložíme změnu projektu (označíme dirty)
+                _onZmena(); // Save project change (mark dirty)
                 NaplnStories();
-                MessageBox.Show(this, $"Úspěšně vygenerováno {_stories.Count} User Stories.", "Generování dokončeno", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, $"Successfully generated {_stories.Count} User Stories.", "Generation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 if (this.IsDisposed || !this.Created) return;
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    lblStatus.Text = "Generování zrušeno uživatelem.";
+                    lblStatus.Text = "Generation cancelled by user.";
                     return;
                 }
-                MessageBox.Show(this, "Chyba při generování User Stories:\n\n" + ex.Message, "Chyba AI", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                lblStatus.Text = "Generování selhalo.";
+                MessageBox.Show(this, "Error generating User Stories:\n\n" + ex.Message, "AI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = "Generation failed.";
             }
             finally
             {
@@ -316,62 +342,63 @@ namespace CodePlanner
                 _cts = null;
                 if (!this.IsDisposed && this.Created)
                 {
-                    btnAiStories.Text = "🤖 Generovat přes Gemini";
-                    btnAiStories.Enabled = !string.IsNullOrWhiteSpace(_apiKey);
+                    btnAiStories.Text = "🤖 Generate with Gemini";
+                    btnAiStories.Enabled = true;
                     Cursor = Cursors.Default;
                 }
             }
+
         }
 
-        private void BtnExportMd_Click(object sender, EventArgs e)
+        private void BtnExportMd_Click(object? sender, EventArgs e)
         {
             using (var dlg = new SaveFileDialog
             {
-                Title = "Export User Stories do Markdown",
+                Title = "Export User Stories to Markdown",
                 Filter = "Markdown (*.md)|*.md",
-                FileName = "user_stories_" + MainForm.BezpecnyNazevSouboru(_project.Name, "projekt") + ".md"
+                FileName = "user_stories_" + MainForm.GetSafeFilename(_project.Name, "project") + ".md"
             })
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     try
                     {
-                        ExportujMarkdown(dlg.FileName);
-                        MessageBox.Show(this, "Markdown export dokončen:\n\n" + dlg.FileName, "Export dokončen", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        ExportMarkdown(dlg.FileName);
+                        MessageBox.Show(this, "Markdown export completed:\n\n" + dlg.FileName, "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, "Export selhal:\n\n" + ex.Message, "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, "Export failed:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
         }
 
-        private void BtnExportCsv_Click(object sender, EventArgs e)
+        private void BtnExportCsv_Click(object? sender, EventArgs e)
         {
             using (var dlg = new SaveFileDialog
             {
-                Title = "Export User Stories do CSV",
-                Filter = "CSV soubory (*.csv)|*.csv",
-                FileName = "user_stories_" + MainForm.BezpecnyNazevSouboru(_project.Name, "projekt") + ".csv"
+                Title = "Export User Stories to CSV",
+                Filter = "CSV files (*.csv)|*.csv",
+                FileName = "user_stories_" + MainForm.GetSafeFilename(_project.Name, "project") + ".csv"
             })
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     try
                     {
-                        ExportujCsv(dlg.FileName);
-                        MessageBox.Show(this, "CSV export dokončen (soubor lze importovat do Jira/Trello):\n\n" + dlg.FileName, "Export dokončen", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        ExportCsv(dlg.FileName);
+                        MessageBox.Show(this, "CSV export completed (file can be imported to Jira/Trello):\n\n" + dlg.FileName, "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, "Export selhal:\n\n" + ex.Message, "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, "Export failed:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
         }
 
-        private void ExportujCsv(string soubor)
+        private void ExportCsv(string soubor)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Issue ID,Summary,Description,Priority");
@@ -383,7 +410,7 @@ namespace CodePlanner
                 var descBuilder = new StringBuilder();
                 descBuilder.AppendLine(s.Description);
                 descBuilder.AppendLine();
-                descBuilder.AppendLine("Akceptační kritéria:");
+                descBuilder.AppendLine("Acceptance Criteria:");
                 foreach (var k in s.Criteria)
                 {
                     descBuilder.AppendLine($"- {k}");
@@ -396,20 +423,20 @@ namespace CodePlanner
             File.WriteAllText(soubor, sb.ToString(), Encoding.UTF8);
         }
 
-        private void ExportujMarkdown(string soubor)
+        private void ExportMarkdown(string soubor)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"# User Stories pro projekt: {_project.Name}");
-            sb.AppendLine($"Datum vygenerování: {DateTime.Now:d. M. yyyy}");
+            sb.AppendLine($"# User Stories for Project: {_project.Name}");
+            sb.AppendLine($"Generation Date: {DateTime.Now:yyyy-MM-dd}");
             sb.AppendLine();
             foreach (var s in _stories)
             {
                 sb.AppendLine($"## {s.Id}: {s.Title}");
-                sb.AppendLine($"**Priorita:** {s.Priority}");
+                sb.AppendLine($"**Priority:** {s.Priority}");
                 sb.AppendLine();
                 sb.AppendLine($"> {s.Description}");
                 sb.AppendLine();
-                sb.AppendLine("### Akceptační kritéria:");
+                sb.AppendLine("### Acceptance Criteria:");
                 foreach (var k in s.Criteria)
                 {
                     sb.AppendLine($"- [ ] {k}");

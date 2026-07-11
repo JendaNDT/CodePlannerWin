@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
+using System.Linq;
 using CodePlanner.Core;
 
 namespace CodePlanner
@@ -10,22 +11,24 @@ namespace CodePlanner
     public class NalezyForm : Form
     {
         private readonly List<ConsistencyFinding> _offlineFindings;
-        private readonly string _apiKey;
-        private readonly string _model;
+        private string? _apiKey;
+        private string? _model;
         private readonly ProjectSpecification _project;
-        private ListView lvNalezy;
-        private Button btnAiCheck;
-        private Label lblStatus;
-        private CancellationTokenSource _cts = null;
+        private readonly Action _onZmena;
+        private ListView lvNalezy = default!;
+        private Button btnAiCheck = default!;
+        private Label lblStatus = default!;
+        private CancellationTokenSource? _cts = null;
 
-        public NalezyForm(List<ConsistencyFinding> offlineFindings, string apiKey, string model, ProjectSpecification project)
+        public NalezyForm(List<ConsistencyFinding> offlineFindings, string? apiKey, string? model, ProjectSpecification project, Action onZmena)
         {
             _offlineFindings = offlineFindings;
             _apiKey = apiKey;
             _model = model;
             _project = project;
+            _onZmena = onZmena;
 
-            Text = "Kontrola konzistence specifikace";
+            Text = "Specification Consistency Check";
             Size = new Size(750, 480);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -40,6 +43,7 @@ namespace CodePlanner
 
             this.Resize += (s, e) =>
             {
+                if (lvNalezy == null) return;
                 int totalWidth = lvNalezy.ClientSize.Width;
                 if (totalWidth > 320)
                 {
@@ -69,13 +73,13 @@ namespace CodePlanner
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = DesignSystem.Body
             };
-            lvNalezy.Columns.Add("Typ", 110);
-            lvNalezy.Columns.Add("Problém / Téma", 180);
-            lvNalezy.Columns.Add("Detail / Návrh řešení", 410);
+            lvNalezy.Columns.Add("Type", 110);
+            lvNalezy.Columns.Add("Topic / Field", 180);
+            lvNalezy.Columns.Add("Detail / Proposed Resolution", 410);
 
             lblStatus = new Label
             {
-                Text = "Kontrola porovnává klíčová slova. Pro sémantické posouzení spusť hloubkovou AI analýzu.",
+                Text = "The offline check compares keywords. Run deep AI consistency analysis for semantic inspection.",
                 Dock = DockStyle.Fill,
                 ForeColor = DesignSystem.SedaText,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -84,7 +88,7 @@ namespace CodePlanner
 
             btnAiCheck = new Button
             {
-                Text = "🧠 Spustit hloubkovou AI analýzu",
+                Text = "🧠 Run Deep AI Analysis",
                 Height = 32,
                 AutoSize = true,
                 BackColor = DesignSystem.Navy,
@@ -98,13 +102,12 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                btnAiCheck.Enabled = false;
-                btnAiCheck.Text = "🧠 Spustit hloubkovou AI analýzu (chybí API klíč)";
+                btnAiCheck.Text = "🔑 Configure API Key";
             }
 
             var btnZavrit = new Button
             {
-                Text = "Zavřít",
+                Text = "Close",
                 Height = 32,
                 Width = 100,
                 FlatStyle = FlatStyle.Flat,
@@ -133,10 +136,26 @@ namespace CodePlanner
             Controls.Add(layout);
 
             NaplnNalezy(_offlineFindings, isAi: false);
+
+            if (_project.AiFindings != null && _project.AiFindings.Count > 0)
+            {
+                var converted = _project.AiFindings.Select(f => new ConsistencyFinding
+                {
+                    Severity = string.Equals(f.Severity, "Rozpor", StringComparison.OrdinalIgnoreCase) || string.Equals(f.Severity, "Conflict", StringComparison.OrdinalIgnoreCase) ? Severity.Conflict : Severity.Warning,
+                    Title = f.Title,
+                    Detail = f.Detail
+                }).ToList();
+                NaplnNalezy(converted, isAi: true);
+                lblStatus.Text = $"Loaded AI findings from the last check ({_project.AiCheckTimestamp:g}).";
+                lblStatus.ForeColor = DesignSystem.Zelena;
+            }
+
+            FormClosing += (s, e) =>
+            {
+                try { _cts?.Cancel(); _cts?.Dispose(); } catch { }
+            };
         }
 
-        // Small italic font getter for the help label
-        private static Font DesignSystemSmallItalic => DesignSystem.BodyItalic;
 
         private void NaplnNalezy(List<ConsistencyFinding> list, bool isAi)
         {
@@ -146,12 +165,12 @@ namespace CodePlanner
             foreach (var n in list)
             {
                 bool isConflict = n.Severity == Severity.Conflict;
-                var it = new ListViewItem(isConflict ? "❗ ROZPOR" : "⚠ Varování");
+                var it = new ListViewItem(isConflict ? "❗ CONFLICT" : "⚠ Warning");
                 it.ForeColor = isConflict ? DesignSystem.Cervena : DesignSystem.Oranzova;
                 
                 if (isAi)
                 {
-                    it.Text = isConflict ? "🧠 ROZPOR (AI)" : "🧠 Varování (AI)";
+                    it.Text = isConflict ? "🧠 CONFLICT (AI)" : "🧠 Warning (AI)";
                 }
 
                 it.SubItems.Add(n.Title);
@@ -161,17 +180,35 @@ namespace CodePlanner
             lvNalezy.EndUpdate();
         }
 
-        private async void BtnAiCheck_Click(object sender, EventArgs e)
+        private async void BtnAiCheck_Click(object? sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(_apiKey))
+            {
+                using (var settingsDlg = new SettingsForm())
+                {
+                    if (settingsDlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var nastaveni = GeminiSettings.Load();
+                        _apiKey = nastaveni.EffectiveApiKey;
+                        _model = nastaveni.GeminiModel;
+                        if (!string.IsNullOrWhiteSpace(_apiKey))
+                        {
+                            btnAiCheck.Text = "🧠 Run Deep AI Analysis";
+                        }
+                    }
+                }
+                return;
+            }
+
             if (_cts != null)
             {
                 _cts.Cancel();
                 return;
             }
 
-            btnAiCheck.Text = "❌ Zrušit analýzu";
+            btnAiCheck.Text = "❌ Cancel Analysis";
             btnAiCheck.Enabled = true;
-            lblStatus.Text = "Volám Gemini API pro hloubkovou kontrolu, chvíli strpení...";
+            lblStatus.Text = "Calling Gemini API for deep consistency check, please wait...";
             lblStatus.ForeColor = DesignSystem.Navy;
 
             // Vyčistíme staré nálezy a naplníme seznam pouze výchozími offline nálezy před novou AI kontrolou
@@ -180,18 +217,24 @@ namespace CodePlanner
 
             try
             {
-                var aiFindings = await GeminiService.AnalyzeConsistencyAsync(_apiKey, _model, _project, _cts.Token);
+                var aiFindings = await GeminiService.AnalyzeConsistencyAsync(_apiKey, _model ?? "gemini-2.5-flash", _project, _cts.Token);
                 if (this.IsDisposed || !this.Created) return;
                 
+                // Uložíme do projektu a spustíme callback změn
+                _project.AiFindings = aiFindings.Select(AiFinding.FromFinding).ToList();
+                _project.AiCheckTimestamp = DateTime.Now;
+                _project.ChangeLog.Add(new DecisionLogEntry { Timestamp = DateTime.Now, Action = "AI Analysis", Detail = $"Deep AI consistency check executed. Found {aiFindings.Count} findings." });
+                _onZmena?.Invoke();
+
                 if (aiFindings.Count == 0)
                 {
-                    lblStatus.Text = "Gemini AI nenašla žádné další logické rozpory ani bezpečnostní díry. Skvělá práce!";
+                    lblStatus.Text = "Gemini AI found no logical conflicts or security vulnerabilities. Great job!";
                     lblStatus.ForeColor = DesignSystem.Zelena;
                 }
                 else
                 {
                     NaplnNalezy(aiFindings, isAi: true);
-                    lblStatus.Text = $"Analýza dokončena. Nalezeno {aiFindings.Count} nových AI podnětů.";
+                    lblStatus.Text = $"Analysis complete. Found {aiFindings.Count} new AI findings.";
                     lblStatus.ForeColor = DesignSystem.Zelena;
                 }
             }
@@ -200,12 +243,12 @@ namespace CodePlanner
                 if (this.IsDisposed || !this.Created) return;
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    lblStatus.Text = "Analýza zrušena uživatelem.";
+                    lblStatus.Text = "Analysis cancelled by user.";
                     lblStatus.ForeColor = DesignSystem.Navy;
                     return;
                 }
-                MessageBox.Show(this, "AI analýza selhala:\n\n" + ex.Message, "Chyba AI", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                lblStatus.Text = "Během AI analýzy došlo k chybě.";
+                MessageBox.Show(this, "AI analysis failed:\n\n" + ex.Message, "AI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = "An error occurred during AI analysis.";
                 lblStatus.ForeColor = DesignSystem.Cervena;
             }
             finally
@@ -214,10 +257,11 @@ namespace CodePlanner
                 _cts = null;
                 if (!this.IsDisposed && this.Created)
                 {
-                    btnAiCheck.Text = "🧠 Spustit hloubkovou AI analýzu";
-                    btnAiCheck.Enabled = !string.IsNullOrWhiteSpace(_apiKey);
+                    btnAiCheck.Text = "🧠 Run Deep AI Analysis";
+                    btnAiCheck.Enabled = true;
                 }
             }
+
         }
     }
 }

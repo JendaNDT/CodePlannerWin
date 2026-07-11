@@ -11,7 +11,7 @@ namespace CodePlanner.Core
     public static class VoiceRecorder
     {
         [DllImport("winmm.dll", EntryPoint = "mciSendStringA", CharSet = CharSet.Ansi)]
-        private static extern int mciSendString(string lpstrCommand, StringBuilder lpstrReturnString, int uReturnLength, IntPtr hwndCallback);
+        private static extern int mciSendString(string lpstrCommand, StringBuilder? lpstrReturnString, int uReturnLength, IntPtr hwndCallback);
 
         private static bool _recording = false;
         private static readonly object _lock = new object();
@@ -22,26 +22,34 @@ namespace CodePlanner.Core
             {
                 if (_recording) return;
 
-                // zavřeme předchozí instanci pro jistotu
+                // Close previous instance just in case
                 mciSendString("close recsound", null, 0, IntPtr.Zero);
 
-                // otevřeme nové nahrávání
-                int err = mciSendString("open new type waveaudio alias recsound", null, 0, IntPtr.Zero);
-                if (err != 0) throw new InvalidOperationException("Nepodařilo se otevřít nahrávací zařízení (MCI). Zkontrolujte mikrofon.");
-                
-                // nastavíme kvalitu: 16-bit, 16000 Hz, mono (ideální pro speech-to-text)
-                mciSendString("set recsound bitspersample 16", null, 0, IntPtr.Zero);
-                mciSendString("set recsound samplespersec 16000", null, 0, IntPtr.Zero);
-                mciSendString("set recsound channels 1", null, 0, IntPtr.Zero);
-                
-                // spustíme nahrávání
-                err = mciSendString("record recsound", null, 0, IntPtr.Zero);
-                if (err != 0) throw new InvalidOperationException("Nepodařilo se spustit nahrávání (MCI).");
-                _recording = true;
+                try
+                {
+                    // Open new recording
+                    int err = mciSendString("open new type waveaudio alias recsound", null, 0, IntPtr.Zero);
+                    if (err != 0) throw new InvalidOperationException("Failed to open recording device (MCI). Please check your microphone.");
+                    
+                    // Set quality: 16-bit, 16000 Hz, mono (ideal for speech-to-text)
+                    mciSendString("set recsound bitspersample 16", null, 0, IntPtr.Zero);
+                    mciSendString("set recsound samplespersec 16000", null, 0, IntPtr.Zero);
+                    mciSendString("set recsound channels 1", null, 0, IntPtr.Zero);
+                    
+                    // Start recording
+                    err = mciSendString("record recsound", null, 0, IntPtr.Zero);
+                    if (err != 0) throw new InvalidOperationException("Failed to start recording (MCI).");
+                    _recording = true;
+                }
+                catch
+                {
+                    mciSendString("close recsound", null, 0, IntPtr.Zero);
+                    throw;
+                }
             }
         }
 
-        public static string StopRecording()
+        public static string? StopRecording()
         {
             lock (_lock)
             {
@@ -49,13 +57,13 @@ namespace CodePlanner.Core
 
                 string cesta = Path.Combine(Path.GetTempPath(), $"voice_input_{Guid.NewGuid():N}.wav");
                 
-                // pokud soubor existuje, smažeme ho
-                try { if (File.Exists(cesta)) File.Delete(cesta); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Chyba při mazání souboru: {ex.Message}"); }
+                // If file exists, delete it
+                try { if (File.Exists(cesta)) File.Delete(cesta); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error deleting file: {ex.Message}"); }
 
-                // zastavíme nahrávání
+                // Stop recording
                 mciSendString("stop recsound", null, 0, IntPtr.Zero);
                 
-                // uložíme do souboru
+                // Save to file
                 int err = mciSendString($"save recsound \"{cesta}\"", null, 0, IntPtr.Zero);
                 mciSendString("close recsound", null, 0, IntPtr.Zero);
                 

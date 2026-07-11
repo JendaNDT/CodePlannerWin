@@ -8,13 +8,13 @@ namespace CodePlanner
     public class SettingsForm : Form
     {
         private readonly GeminiSettings _settings;
-        private TextBox txtApiKey;
-        private ComboBox cbModel;
-        private CheckBox chkZobrazitKlic;
-        private LinkLabel lnkGetApiKey;
-        private Button btnUlozit;
-        private Button btnStorno;
-        private Button btnTest;
+        private TextBox txtApiKey = default!;
+        private ComboBox cbModel = default!;
+        private CheckBox chkZobrazitKlic = default!;
+        private LinkLabel lnkGetApiKey = default!;
+        private Button btnUlozit = default!;
+        private Button btnStorno = default!;
+        private Button btnTest = default!;
 
         public SettingsForm()
         {
@@ -26,20 +26,21 @@ namespace CodePlanner
 
             _settings = GeminiSettings.Load();
 
-            ClientSize = new Size(500, 275);
+            ClientSize = new Size(500, 310);
+            MinimumSize = new Size(450, 310);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "Nastavení Gemini API";
+            Text = "Gemini API Settings";
             Font = DesignSystem.Body;
             BackColor = DesignSystem.SvetlePozadi;
             ForeColor = DesignSystem.Navy;
 
             PostavUI();
-            NactiHodnoty();
+            LoadValues();
         }
 
         private void PostavUI()
@@ -61,7 +62,7 @@ namespace CodePlanner
 
             var lblApiKey = new Label
             {
-                Text = "API Klíč pro Gemini (lze nastavit i přes proměnnou GEMINI_API_KEY):",
+                Text = "Gemini API Key (can also be set via GEMINI_API_KEY environment variable):",
                 AutoSize = true,
                 Font = DesignSystem.BodyBold,
                 Margin = new Padding(0, 0, 0, 4)
@@ -86,7 +87,7 @@ namespace CodePlanner
 
             chkZobrazitKlic = new CheckBox
             {
-                Text = "Zobrazit klíč",
+                Text = "Show key",
                 AutoSize = true,
                 Font = DesignSystem.Small,
                 ForeColor = DesignSystem.SedaText,
@@ -100,7 +101,7 @@ namespace CodePlanner
 
             lnkGetApiKey = new LinkLabel
             {
-                Text = "Získat API klíč v Google AI Studio",
+                Text = "Get API key in Google AI Studio",
                 Font = DesignSystem.SmallUnderline,
                 LinkColor = DesignSystem.Teal,
                 ActiveLinkColor = Color.FromArgb(19, 150, 137),
@@ -116,7 +117,7 @@ namespace CodePlanner
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "Odkaz nelze otevřít: " + ex.Message, "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, "Failed to open link: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -125,7 +126,7 @@ namespace CodePlanner
 
             var lblModel = new Label
             {
-                Text = "Model Gemini:",
+                Text = "Gemini Model:",
                 AutoSize = true,
                 Font = DesignSystem.BodyBold,
                 Margin = new Padding(0, 0, 0, 4)
@@ -155,7 +156,7 @@ namespace CodePlanner
 
             btnStorno = new Button
             {
-                Text = "Storno",
+                Text = "Cancel",
                 DialogResult = DialogResult.Cancel,
                 Size = new Size(90, 30),
                 FlatStyle = FlatStyle.Flat,
@@ -169,7 +170,7 @@ namespace CodePlanner
 
             btnUlozit = new Button
             {
-                Text = "Uložit",
+                Text = "Save",
                 Size = new Size(90, 30),
                 BackColor = DesignSystem.Teal,
                 ForeColor = Color.White,
@@ -184,7 +185,7 @@ namespace CodePlanner
 
             btnTest = new Button
             {
-                Text = "🧪 Test připojení",
+                Text = "🧪 Test Connection",
                 Size = new Size(130, 30),
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = DesignSystem.Navy,
@@ -216,7 +217,7 @@ namespace CodePlanner
             CancelButton = btnStorno;
         }
 
-        private void NactiHodnoty()
+        private void LoadValues()
         {
             txtApiKey.Text = _settings.GeminiApiKey;
             
@@ -232,10 +233,10 @@ namespace CodePlanner
             }
         }
 
-        private void BtnUlozit_Click(object sender, EventArgs e)
+        private void BtnUlozit_Click(object? sender, EventArgs e)
         {
             _settings.GeminiApiKey = txtApiKey.Text.Trim();
-            _settings.GeminiModel = cbModel.SelectedItem.ToString();
+            _settings.GeminiModel = cbModel.SelectedItem?.ToString() ?? "gemini-2.5-flash";
 
             try
             {
@@ -245,39 +246,39 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Chyba při ukládání nastavení:\n\n" + ex.Message,
-                    "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Error saving settings:\n\n" + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private async void BtnTest_Click(object sender, EventArgs e)
+        private async void BtnTest_Click(object? sender, EventArgs e)
         {
             string testKey = txtApiKey.Text.Trim();
             string testModel = cbModel.SelectedItem?.ToString() ?? "gemini-2.5-flash";
 
             if (string.IsNullOrWhiteSpace(testKey))
             {
-                MessageBox.Show(this, "Pro testování zadejte platný API klíč.", "Test připojení", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Please enter a valid API key to test.", "Test Connection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             btnTest.Enabled = false;
-            btnTest.Text = "🧪 Testuji...";
+            btnTest.Text = "🧪 Testing...";
             Cursor = Cursors.WaitCursor;
 
             try
             {
                 await GeminiService.TestConnectionAsync(testKey, testModel);
-                MessageBox.Show(this, "Připojení k Gemini API bylo úspěšně ověřeno. Váš API klíč je platný!", "Test úspěšný", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Connection to Gemini API verified successfully. Your API key is valid!", "Test Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Test připojení selhal:\n\n" + ex.Message, "Chyba připojení", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Test connection failed:\n\n" + ex.Message, "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnTest.Enabled = true;
-                btnTest.Text = "🧪 Test připojení";
+                btnTest.Text = "🧪 Test Connection";
                 Cursor = Cursors.Default;
             }
         }

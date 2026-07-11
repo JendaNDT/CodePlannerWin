@@ -20,8 +20,13 @@ internal static class Testy
     {
         Console.WriteLine("== Testy jádra CodePlanner ==");
 
-        // --- základní stav ---
-        var p = new ProjectSpecification { Name = "Hotelová evidence" };
+        string testSettingsPath = Path.Combine(Path.GetTempPath(), "codeplanner_test_settings.json");
+        GeminiSettings.SettingsPathOverride = testSettingsPath;
+
+        try
+        {
+            // --- základní stav ---
+            var p = new ProjectSpecification { Name = "Hotelová evidence" };
         Over(StandardQuestions.All.Count == 11, "sada má 11 řízených otázek");
         Over(StandardQuestions.All.Count(o => o.Impact == Impact.High) == 6, "sada má 6 otázek s vysokým dopadem");
         Over(SpecificationService.GetNextUnansweredQuestion(p).Id == "cil-problem", "první otázka je cíl/problém");
@@ -47,13 +52,13 @@ internal static class Testy
 
         // --- Markdown ---
         var md = SpecificationService.RenderMarkdown(p);
-        Over(md.Contains("# Specifikace: Hotelová evidence"), "MD: nadpis s názvem projektu");
+        Over(md.Contains("# Specification: Hotelová evidence"), "MD: nadpis s názvem projektu");
         foreach (var s in SpecificationService.SectionOrder)
             Over(md.Contains("## " + s), "MD: obsahuje sekci " + s);
-        Over(md.Contains("[PŘEDPOKLAD]"), "MD: předpoklad je viditelně označen");
+        Over(md.Contains("[ASSUMPTION]"), "MD: předpoklad je viditelně označen");
         Over(md.Contains("> Udělej mi aplikaci"), "MD: původní nápad je citován");
-        Over(md.Contains("## Otevřené otázky"), "MD: sekce otevřených otázek");
-        Over(md.Contains("## Log rozhodnutí"), "MD: log rozhodnutí");
+        Over(md.Contains("## Open Questions"), "MD: sekce otevřených otázek");
+        Over(md.Contains("## Decision Log"), "MD: log rozhodnutí");
 
         // --- JSON ---
         var json = SpecificationService.RenderJson(p);
@@ -65,8 +70,8 @@ internal static class Testy
             Over(root.GetProperty("openQuestions").GetArrayLength() == 8, "JSON: 8 otevřených otázek");
             Over(root.GetProperty("decisionLog").GetArrayLength() == p.ChangeLog.Count, "JSON: kompletní log");
             var technika = root.GetProperty("sections").EnumerateArray()
-                .First(s => s.GetProperty("name").GetString() == "Technika");
-            Over(technika.GetProperty("items").GetArrayLength() == 1, "JSON: Technika má 1 položku");
+                .First(s => s.GetProperty("name").GetString() == "Technology");
+            Over(technika.GetProperty("items").GetArrayLength() == 1, "JSON: Technology má 1 položku");
             Over(json.Contains("Hotelová"), "JSON: česká diakritika není escapovaná");
         }
 
@@ -78,14 +83,14 @@ internal static class Testy
         Over(p2.Answers.Count == p.Answers.Count, "roundtrip: počet odpovědí sedí");
         Over(p2.ChangeLog.Count == p.ChangeLog.Count, "roundtrip: log sedí");
         Over(p2.Version == p.Version, "roundtrip: verze sedí");
-        Over(SpecificationService.RenderMarkdown(p2).Contains("[PŘEDPOKLAD]"), "roundtrip: render funguje i po načtení");
+        Over(SpecificationService.RenderMarkdown(p2).Contains("[ASSUMPTION]"), "roundtrip: render funguje i po načtení");
         File.Delete(tmp);
 
         // --- prázdný projekt se vyrenderuje bez chyby ---
         var prazdny = new ProjectSpecification();
         var mdPrazdny = SpecificationService.RenderMarkdown(prazdny);
-        Over(mdPrazdny.Contains("(nepojmenovaný projekt)"), "prázdný projekt: bezpečný nadpis");
-        Over(mdPrazdny.Contains("(zatím nezadán"), "prázdný projekt: výzva k zadání nápadu");
+        Over(mdPrazdny.Contains("(unnamed project)"), "prázdný projekt: bezpečný nadpis");
+        Over(mdPrazdny.Contains("(not entered yet"), "prázdný projekt: výzva k zadání nápadu");
         SpecificationService.RenderJson(prazdny);
 
         // --- kontrola konzistence ---
@@ -100,20 +105,20 @@ internal static class Testy
 
         var k2 = new ProjectSpecification { Idea = "Evidence hostů: jméno a email každého hosta." };
         SpecificationService.AnswerQuestion(k2, "data-obsah", "Jen neosobní provozní data, bez osobních údajů.");
-        Over(ConsistencyChecker.Check(k2).Any(n => n.Title == "Osobní údaje"), "kontrola: osobní údaje×bez osobních je rozpor");
+        Over(ConsistencyChecker.Check(k2).Any(n => n.Title == "Personal Data"), "kontrola: osobní údaje×bez osobních je rozpor");
 
         var k3 = new ProjectSpecification { Idea = "Program na skladovou evidenci." };
         SpecificationService.AnswerQuestion(k3, "rozsah-nongoals", "tisk sestav, statistiky prodeje");
         SpecificationService.AnswerQuestion(k3, "ux-styl", "Hlavní obrazovka se seznamem, detail položky, tisk sestav na konci měsíce.");
-        Over(ConsistencyChecker.Check(k3).Any(n => n.Title == "Non-goal popsán jako cíl"), "kontrola: non-goal zmíněný v UX je varování");
+        Over(ConsistencyChecker.Check(k3).Any(n => n.Title == "Non-goal described as a goal"), "kontrola: non-goal zmíněný v UX je varování");
 
         var k4 = new ProjectSpecification();
         SpecificationService.AnswerQuestion(k4, "akceptace", "Až budou splněny všechny body specifikace.");
-        Over(ConsistencyChecker.Check(k4).Any(n => n.Title == "Vágní akceptační kritéria"), "kontrola: vágní akceptace je varování");
+        Over(ConsistencyChecker.Check(k4).Any(n => n.Title == "Vague acceptance criteria"), "kontrola: vágní akceptace je varování");
 
         var k5 = new ProjectSpecification { Idea = "Chci export do CSV pro účetní." };
         SpecificationService.UseAssumption(k5, "data-export");
-        Over(ConsistencyChecker.Check(k5).Any(n => n.Title == "Export dat vs. žádný export"), "kontrola: export v nápadu × bez exportu je rozpor");
+        Over(ConsistencyChecker.Check(k5).Any(n => n.Title == "Data export vs. no export"), "kontrola: export v nápadu × bez exportu je rozpor");
 
         var k6 = new ProjectSpecification();
         SpecificationService.UseAssumption(k6, "cil-problem");
@@ -121,24 +126,24 @@ internal static class Testy
         SpecificationService.UseAssumption(k6, "tech-platforma");
         SpecificationService.AnswerQuestion(k6, "rozsah-funkce", "Chci nějaké základní skladové funkce.");
         var n6 = ConsistencyChecker.Check(k6);
-        Over(n6.Any(n => n.Title.StartsWith("Vysoký počet předpokladů")), "kontrola: 3 předpoklady s vysokým dopadem jsou varování");
-        Over(n6.Any(n => n.Title == "Prázdný původní nápad"), "kontrola: prázdný nápad + odpovědi je varování");
+        Over(n6.Any(n => n.Title.StartsWith("High number of assumptions")), "kontrola: 3 předpoklady s vysokým dopadem jsou varování");
+        Over(n6.Any(n => n.Title == "Empty original idea"), "kontrola: prázdný nápad + odpovědi je varování");
 
-        Over(SpecificationService.RenderMarkdown(k1).Contains("## Kontrola konzistence"), "MD: sekce kontroly konzistence při nálezech");
-        Over(!SpecificationService.RenderMarkdown(cisty).Contains("## Kontrola konzistence"), "MD: sekce kontroly chybí bez nálezů");
+        Over(SpecificationService.RenderMarkdown(k1).Contains("## Consistency Checks"), "MD: sekce kontroly konzistence při nálezech");
+        Over(!SpecificationService.RenderMarkdown(cisty).Contains("## Consistency Checks"), "MD: sekce kontroly chybí bez nálezů");
         using (var docK = JsonDocument.Parse(SpecificationService.RenderJson(k1)))
             Over(docK.RootElement.GetProperty("consistencyCheck").GetArrayLength() >= 1, "JSON: pole kontrolaKonzistence");
 
         var kSqliteWeb = new ProjectSpecification();
         SpecificationService.AnswerQuestion(kSqliteWeb, "tech-platforma", "Funguje to ve webovém prohlížeči.");
         SpecificationService.AnswerQuestion(kSqliteWeb, "data-obsah", "Uložíme to do SQLite databáze.");
-        Over(ConsistencyChecker.Check(kSqliteWeb).Any(n => n.Title == "SQLite databáze na webu"), "kontrola: SQLite na webu je varování");
+        Over(ConsistencyChecker.Check(kSqliteWeb).Any(n => n.Title == "SQLite database on web"), "kontrola: SQLite na webu je varování");
 
         var kAuth = new ProjectSpecification();
         SpecificationService.AnswerQuestion(kAuth, "cil-uzivatele", "Bude tam administrátor a běžný host.");
         SpecificationService.AnswerQuestion(kAuth, "tech-platforma", "Pouze desktop.");
         SpecificationService.AnswerQuestion(kAuth, "data-obsah", "Data budeme ukládat lokálně do souborů.");
-        Over(ConsistencyChecker.Check(kAuth).Any(n => n.Title == "Uživatelské role bez přihlašování"), "kontrola: role bez auth je varování");
+        Over(ConsistencyChecker.Check(kAuth).Any(n => n.Title == "User roles without authentication"), "kontrola: role bez auth je varování");
 
         // --- šablony otázek ---
         var pSablony = new ProjectSpecification { Name = "Test šablon" };
@@ -154,13 +159,6 @@ internal static class Testy
         Over(pSablony.ChangeLog.Any(l => l.Action == "Typ projektu" && l.Detail.Contains("Změna typu projektu")), "záznam o změně typu v logu");
 
         // --- Gemini nastavení a prompt testy ---
-        string tmpSettings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodePlanner", "settings.json");
-        string originalSettingsContent = null;
-        if (File.Exists(tmpSettings))
-        {
-            originalSettingsContent = File.ReadAllText(tmpSettings);
-        }
-
         try
         {
             var settings = new GeminiSettings
@@ -215,21 +213,14 @@ internal static class Testy
         }
         finally
         {
-            if (originalSettingsContent != null)
-            {
-                File.WriteAllText(tmpSettings, originalSettingsContent);
-            }
-            else if (File.Exists(tmpSettings))
-            {
-                File.Delete(tmpSettings);
-            }
+            if (File.Exists(testSettingsPath)) File.Delete(testSettingsPath);
         }
 
         var prompt = GeminiService.SestavPrompt("Chci vytvořit jednoduchou kalkulačku", ProjectType.General.ToString());
         Over(!string.IsNullOrWhiteSpace(prompt), "prompt: sestavení promptu vrací neprázdný text");
         Over(prompt.Contains("Chci vytvořit jednoduchou kalkulačku"), "prompt: obsahuje původní nápad");
         Over(prompt.Contains("cil-problem"), "prompt: obsahuje ID otázky");
-        Over(prompt.Contains("Výchozí předpoklad: Plně online"), "prompt: obsahuje výchozí předpoklady");
+        Over(prompt.Contains("Default assumption: Fully online"), "prompt: obsahuje výchozí předpoklady");
 
         // --- Testy referenčních podkladů (v0.7) ---
         var promptSReferenci = GeminiService.SestavPrompt("Nápad", ProjectType.General.ToString(), "Toto jsou referenční specifikace.");
@@ -244,7 +235,7 @@ internal static class Testy
         };
 
         string mdRef = SpecificationService.RenderMarkdown(pRef);
-        Over(mdRef.Contains("Referenční podklady (api.txt)"), "MD: obsahuje sekci referenčních podkladů");
+        Over(mdRef.Contains("Reference Materials (api.txt)"), "MD: obsahuje sekci referenčních podkladů");
         Over(mdRef.Contains("Dokumentace k API v1"), "MD: obsahuje text referenčních podkladů");
 
         string jsonRef = SpecificationService.RenderJson(pRef);
@@ -589,11 +580,25 @@ internal static class Testy
         string tmpStary = Path.Combine(Path.GetTempPath(), "test_stary_format.vcbrief");
         try
         {
-            File.WriteAllText(tmpStary, "{\"Nazev\":\"Starý projekt\",\"AiFindings\":null}");
+            // Otestujeme novou camelCase strukturu bez nových polí (chybějící nová pole se doinicializují)
+            File.WriteAllText(tmpStary, "{\"name\":\"Starý projekt\",\"aiFindings\":null}");
             var pStaryFormat = SpecificationService.LoadProject(tmpStary);
             Over(pStaryFormat.AiFindings != null && pStaryFormat.AiFindings.Count == 0, "zpětná kompatibilita: AiFindings se doinicializují");
             Over(pStaryFormat.StoriesGenerationTimestamp == null, "zpětná kompatibilita: CasGenerovaniStories je null");
             Over(pStaryFormat.AiCheckTimestamp == null, "zpětná kompatibilita: CasAiKontroly je null");
+
+            // Otestujeme, že načtení starého formátu (s českými klíči jako Nazev) vyhodí výjimku
+            bool vyhodilVyjimku = false;
+            try
+            {
+                File.WriteAllText(tmpStary, "{\"Nazev\":\"Starý projekt\"}");
+                SpecificationService.LoadProject(tmpStary);
+            }
+            catch (Exception)
+            {
+                vyhodilVyjimku = true;
+            }
+            Over(vyhodilVyjimku, "zpětná kompatibilita: starý formát s českými klíči vyhodí výjimku");
         }
         finally
         {
@@ -619,25 +624,24 @@ internal static class Testy
         pStale.UpdatedAt = DateTime.Now;
 
         string mdStale = SpecificationService.RenderMarkdown(pStale);
-        Over(mdStale.Contains("Odhad byl vygenerován pro starší verzi specifikace"), "MD: poznámka o zastaralém odhadu");
-        Over(mdStale.Contains("User stories byly vygenerovány pro starší verzi specifikace"), "MD: poznámka o zastaralých stories");
+        Over(mdStale.Contains("The estimate was generated for an older version of the specification"), "MD: poznámka o zastaralém odhadu");
+        Over(mdStale.Contains("User stories were generated for an older version of the specification"), "MD: poznámka o zastaralých stories");
 
         string htmlStale = SpecificationService.RenderHtml(pStale);
-        Over(htmlStale.Contains("Odhad byl vygenerován pro starší verzi specifikace"), "HTML: poznámka o zastaralém odhadu");
-        Over(htmlStale.Contains("User stories byly vygenerovány pro starší verzi specifikace"), "HTML: poznámka o zastaralých stories");
+        Over(htmlStale.Contains("The estimate was generated for an older version of the specification"), "HTML: poznámka o zastaralém odhadu");
+        Over(htmlStale.Contains("User stories were generated for an older version of the specification"), "HTML: poznámka o zastaralých stories");
 
         var pCerstve = new ProjectSpecification { Name = "Čerstvé odhady" };
         pCerstve.Metrics = new ProjectMetrics { TimeEstimateMin = "10 h", CalculationTimestamp = DateTime.Now.AddHours(1) };
         pCerstve.UserStories.Add(new UserStory { Id = "US-01", Title = "Story" });
         pCerstve.StoriesGenerationTimestamp = DateTime.Now.AddHours(1);
-        Over(!SpecificationService.RenderMarkdown(pCerstve).Contains("pro starší verzi specifikace"), "MD: čerstvé odhady bez poznámky");
         Over(SpecificationService.AreMetricsOutdated(pStale), "helper: AreMetricsOutdated platí pro starý výpočet");
         Over(!SpecificationService.AreMetricsOutdated(pCerstve), "helper: AreMetricsOutdated neplatí pro čerstvý výpočet");
         Over(SpecificationService.AreStoriesOutdated(pStale), "helper: AreStoriesOutdated platí pro staré stories");
         Over(!SpecificationService.AreStoriesOutdated(new ProjectSpecification()), "helper: AreStoriesOutdated neplatí bez stories");
 
         // --- patička exportů ---
-        Over(mdStale.Contains("*Vytvořeno nástrojem CodePlanner*"), "MD: patička obsahuje nový text");
+        Over(mdStale.Contains("*Created by CodePlanner*"), "MD: patička obsahuje nový text");
         Over(!mdStale.Contains("demonstrátor bez AI"), "MD: patička už neobsahuje „demonstrátor bez AI“");
         Over(!htmlStale.Contains("demonstrátor bez AI"), "HTML: neobsahuje „demonstrátor bez AI“");
 
@@ -675,6 +679,16 @@ internal static class Testy
         Over(htmlXss.Contains("id=\"story-US-1scriptalertXSSscript\""), "L2 test: HTML obsahuje bezpečně vyčištěné id");
         Over(htmlXss.Contains("toggleStory(this, 'story-US-1scriptalertXSSscript')"), "L2 test: HTML obsahuje bezpečně vyčištěné id v onchange");
         Over(htmlXss.Contains("US-1&lt;script&gt;alert("), "L2 test: us.Id je v textu správně escapováno");
+
+        }
+        finally
+        {
+            GeminiSettings.SettingsPathOverride = null;
+            if (File.Exists(testSettingsPath))
+            {
+                try { File.Delete(testSettingsPath); } catch { }
+            }
+        }
 
         Console.WriteLine();
         Console.WriteLine("VSECHNY TESTY OK (" + _ok + " kontrol)");

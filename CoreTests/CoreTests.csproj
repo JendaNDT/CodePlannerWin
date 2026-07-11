@@ -2,15 +2,18 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../CodePlanner/Core/SpecCore.cs" Link="SpecCore.cs" />
-    <Compile Include="../CodePlanner/Core/GeminiService.cs" Link="GeminiService.cs" />
+    <Compile Include="../CodePlanner/Core/*.cs" Link="Core\%(Filename).cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
