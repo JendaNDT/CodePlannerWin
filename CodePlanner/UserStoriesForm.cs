@@ -33,7 +33,7 @@ namespace CodePlanner
             _project = project;
             _onZmena = onZmena;
 
-            Text = "User Stories";
+            Text = LocalizationService.T("User Stories", "User Stories");
             Size = new Size(850, 580);
             MinimumSize = new Size(750, 450);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -61,7 +61,7 @@ namespace CodePlanner
             };
             var lblTitle = new Label
             {
-                Text = "💡 User Stories / Backlog",
+                Text = LocalizationService.T("💡 User Stories / Backlog", "💡 User Stories / Backlog"),
                 Font = DesignSystem.HeaderLarge,
                 ForeColor = Color.White,
                 Location = new Point(16, 16),
@@ -79,7 +79,7 @@ namespace CodePlanner
 
             lblStatus = new Label
             {
-                Text = "Loaded",
+                Text = LocalizationService.T("Načteno", "Loaded"),
                 ForeColor = DesignSystem.SedaText,
                 Location = new Point(16, 18),
                 AutoSize = true,
@@ -88,7 +88,7 @@ namespace CodePlanner
 
             btnAiStories = new Button
             {
-                Text = "🤖 Generate with Gemini",
+                Text = LocalizationService.T("🤖 Generovat přes Gemini", "🤖 Generate with Gemini"),
                 Height = 32,
                 AutoSize = true,
                 BackColor = DesignSystem.Navy,
@@ -102,12 +102,12 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                btnAiStories.Text = "🔑 Configure API Key";
+                btnAiStories.Text = LocalizationService.T("🔑 Konfigurovat API klíč", "🔑 Configure API Key");
             }
 
             btnExportMd = new Button
             {
-                Text = "⬇ Export Markdown...",
+                Text = LocalizationService.T("⬇ Exportovat Markdown...", "⬇ Export Markdown..."),
                 Height = 32,
                 Width = 135,
                 FlatStyle = FlatStyle.Flat,
@@ -120,7 +120,7 @@ namespace CodePlanner
 
             btnExportCsv = new Button
             {
-                Text = "⬇ Export CSV (Jira/Trello)...",
+                Text = LocalizationService.T("⬇ Exportovat CSV (Jira/Trello)...", "⬇ Export CSV (Jira/Trello)..."),
                 Height = 32,
                 Width = 175,
                 FlatStyle = FlatStyle.Flat,
@@ -133,7 +133,7 @@ namespace CodePlanner
 
             var btnZavrit = new Button
             {
-                Text = "Close",
+                Text = LocalizationService.T("Zavřít", "Close"),
                 Height = 32,
                 Width = 80,
                 FlatStyle = FlatStyle.Flat,
@@ -215,14 +215,14 @@ namespace CodePlanner
             if (_stories.Count > 0)
             {
                 lstStories.SelectedIndex = 0;
-                lblStatus.Text = $"Loaded {_stories.Count} User Stories.";
+                lblStatus.Text = LocalizationService.T($"Načteno {_stories.Count} User Stories.", $"Loaded {_stories.Count} User Stories.");
                 btnExportMd.Enabled = true;
                 btnExportCsv.Enabled = true;
             }
             else
             {
-                rtbDetail.Text = "No User Stories have been generated yet.\n\nClick the \"🤖 Generate with Gemini\" (or \"🔑 Configure API Key\") button to create an agile backlog based on the current specification.";
-                lblStatus.Text = "No User Stories available.";
+                rtbDetail.Text = LocalizationService.T("Zatím nebyly vygenerovány žádné User Stories.\n\nKlikněte na tlačítko \"🤖 Generovat přes Gemini\" (nebo \"🔑 Konfigurovat API klíč\") pro vytvoření agilního backlogu na základě aktuální specifikace.", "No User Stories have been generated yet.\n\nClick the \"🤖 Generate with Gemini\" (or \"🔑 Configure API Key\") button to create an agile backlog based on the current specification.");
+                lblStatus.Text = LocalizationService.T("Žádné User Stories nejsou k dispozici.", "No User Stories available.");
                 btnExportMd.Enabled = false;
                 btnExportCsv.Enabled = false;
             }
@@ -246,14 +246,14 @@ namespace CodePlanner
 
             rtbDetail.SelectionFont = DesignSystem.BodyBold;
             rtbDetail.SelectionColor = DesignSystem.SedaText;
-            rtbDetail.AppendText("Priority: ");
+            rtbDetail.AppendText(LocalizationService.T("Priorita: ", "Priority: "));
             rtbDetail.SelectionFont = DesignSystem.BodyBold;
             rtbDetail.SelectionColor = s.Priority == "High" ? DesignSystem.Cervena : (s.Priority == "Medium" ? DesignSystem.Oranzova : DesignSystem.Zelena);
             rtbDetail.AppendText($"{s.Priority}\n\n");
 
             rtbDetail.SelectionFont = DesignSystem.CardHeader;
             rtbDetail.SelectionColor = DesignSystem.Navy;
-            rtbDetail.AppendText("User Story\n");
+            rtbDetail.AppendText(LocalizationService.T("User Story\n", "User Story\n"));
             
             rtbDetail.SelectionFont = DesignSystem.BodyItalic;
             rtbDetail.SelectionColor = Color.FromArgb(50, 50, 50);
@@ -261,7 +261,7 @@ namespace CodePlanner
 
             rtbDetail.SelectionFont = DesignSystem.CardHeader;
             rtbDetail.SelectionColor = DesignSystem.Navy;
-            rtbDetail.AppendText("Acceptance Criteria\n");
+            rtbDetail.AppendText(LocalizationService.T("Akceptační kritéria\n", "Acceptance Criteria\n"));
 
             rtbDetail.SelectionFont = DesignSystem.Body;
             rtbDetail.SelectionColor = Color.Black;
@@ -284,7 +284,7 @@ namespace CodePlanner
                         _model = nast.GeminiModel;
                         if (!string.IsNullOrWhiteSpace(_apiKey))
                         {
-                            btnAiStories.Text = "🤖 Generovat přes Gemini";
+                            btnAiStories.Text = LocalizationService.T("🤖 Generovat přes Gemini", "🤖 Generate with Gemini");
                         }
                     }
                 }
@@ -298,9 +298,9 @@ namespace CodePlanner
             }
 
             Cursor = Cursors.WaitCursor;
-            btnAiStories.Text = "❌ Cancel Generation";
+            btnAiStories.Text = LocalizationService.T("❌ Zrušit generování", "❌ Cancel Generation");
             btnAiStories.Enabled = true;
-            lblStatus.Text = "Calling Gemini API, please wait...";
+            lblStatus.Text = LocalizationService.T("Volám Gemini API, čekejte prosím...", "Calling Gemini API, please wait...");
             _cts = new CancellationTokenSource();
 
             try
@@ -317,24 +317,24 @@ namespace CodePlanner
                 _project.ChangeLog.Add(new DecisionLogEntry
                 {
                     Timestamp = DateTime.Now,
-                    Action = "User Stories",
-                    Detail = $"Generated {_stories.Count} user stories via Gemini."
+                    Action = LocalizationService.T("User Stories", "User Stories"),
+                    Detail = LocalizationService.T($"Vygenerováno {_stories.Count} user stories přes Gemini.", $"Generated {_stories.Count} user stories via Gemini.")
                 });
 
                 _onZmena(); // Save project change (mark dirty)
                 NaplnStories();
-                MessageBox.Show(this, $"Successfully generated {_stories.Count} User Stories.", "Generation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, LocalizationService.T($"Úspěšně vygenerováno {_stories.Count} User Stories.", $"Successfully generated {_stories.Count} User Stories."), LocalizationService.T("Generování dokončeno", "Generation Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 if (this.IsDisposed || !this.Created) return;
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    lblStatus.Text = "Generation cancelled by user.";
+                    lblStatus.Text = LocalizationService.T("Generování zrušeno uživatelem.", "Generation cancelled by user.");
                     return;
                 }
-                MessageBox.Show(this, "Error generating User Stories:\n\n" + ex.Message, "AI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                lblStatus.Text = "Generation failed.";
+                MessageBox.Show(this, LocalizationService.T("Chyba při generování User Stories:\n\n", "Error generating User Stories:\n\n") + ex.Message, LocalizationService.T("Chyba AI", "AI Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = LocalizationService.T("Generování selhalo.", "Generation failed.");
             }
             finally
             {
@@ -342,7 +342,7 @@ namespace CodePlanner
                 _cts = null;
                 if (!this.IsDisposed && this.Created)
                 {
-                    btnAiStories.Text = "🤖 Generate with Gemini";
+                    btnAiStories.Text = LocalizationService.T("🤖 Generovat přes Gemini", "🤖 Generate with Gemini");
                     btnAiStories.Enabled = true;
                     Cursor = Cursors.Default;
                 }
@@ -354,7 +354,7 @@ namespace CodePlanner
         {
             using (var dlg = new SaveFileDialog
             {
-                Title = "Export User Stories to Markdown",
+                Title = LocalizationService.T("Exportovat User Stories do Markdownu", "Export User Stories to Markdown"),
                 Filter = "Markdown (*.md)|*.md",
                 FileName = "user_stories_" + MainForm.GetSafeFilename(_project.Name, "project") + ".md"
             })
@@ -364,11 +364,11 @@ namespace CodePlanner
                     try
                     {
                         ExportMarkdown(dlg.FileName);
-                        MessageBox.Show(this, "Markdown export completed:\n\n" + dlg.FileName, "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, LocalizationService.T("Export do Markdownu dokončen:\n\n", "Markdown export completed:\n\n") + dlg.FileName, LocalizationService.T("Export dokončen", "Export Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, "Export failed:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, LocalizationService.T("Export selhal:\n\n", "Export failed:\n\n") + ex.Message, LocalizationService.T("Chyba", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -378,7 +378,7 @@ namespace CodePlanner
         {
             using (var dlg = new SaveFileDialog
             {
-                Title = "Export User Stories to CSV",
+                Title = LocalizationService.T("Exportovat User Stories do CSV", "Export User Stories to CSV"),
                 Filter = "CSV files (*.csv)|*.csv",
                 FileName = "user_stories_" + MainForm.GetSafeFilename(_project.Name, "project") + ".csv"
             })
@@ -388,11 +388,11 @@ namespace CodePlanner
                     try
                     {
                         ExportCsv(dlg.FileName);
-                        MessageBox.Show(this, "CSV export completed (file can be imported to Jira/Trello):\n\n" + dlg.FileName, "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, LocalizationService.T("Export do CSV dokončen (soubor lze importovat do Jira/Trello):\n\n", "CSV export completed (file can be imported to Jira/Trello):\n\n") + dlg.FileName, LocalizationService.T("Export dokončen", "Export Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, "Export failed:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, LocalizationService.T("Export selhal:\n\n", "Export failed:\n\n") + ex.Message, LocalizationService.T("Chyba", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -410,7 +410,7 @@ namespace CodePlanner
                 var descBuilder = new StringBuilder();
                 descBuilder.AppendLine(s.Description);
                 descBuilder.AppendLine();
-                descBuilder.AppendLine("Acceptance Criteria:");
+                descBuilder.AppendLine(LocalizationService.T("Akceptační kritéria:", "Acceptance Criteria:"));
                 foreach (var k in s.Criteria)
                 {
                     descBuilder.AppendLine($"- {k}");
@@ -426,17 +426,17 @@ namespace CodePlanner
         private void ExportMarkdown(string soubor)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"# User Stories for Project: {_project.Name}");
-            sb.AppendLine($"Generation Date: {DateTime.Now:yyyy-MM-dd}");
+            sb.AppendLine($"# " + LocalizationService.T($"User Stories pro projekt: {_project.Name}", $"User Stories for Project: {_project.Name}"));
+            sb.AppendLine(LocalizationService.T("Datum generování: ", "Generation Date: ") + $"{DateTime.Now:yyyy-MM-dd}");
             sb.AppendLine();
             foreach (var s in _stories)
             {
                 sb.AppendLine($"## {s.Id}: {s.Title}");
-                sb.AppendLine($"**Priority:** {s.Priority}");
+                sb.AppendLine($"**" + LocalizationService.T("Priorita", "Priority") + $":** {s.Priority}");
                 sb.AppendLine();
                 sb.AppendLine($"> {s.Description}");
                 sb.AppendLine();
-                sb.AppendLine("### Acceptance Criteria:");
+                sb.AppendLine("### " + LocalizationService.T("Akceptační kritéria:", "Acceptance Criteria:"));
                 foreach (var k in s.Criteria)
                 {
                     sb.AppendLine($"- [ ] {k}");

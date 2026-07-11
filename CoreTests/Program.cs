@@ -18,6 +18,7 @@ internal static class Testy
 
     private static void Main()
     {
+        CodePlanner.Core.LocalizationService.CurrentLanguage = "en";
         Console.WriteLine("== Testy jádra CodePlanner ==");
 
         string testSettingsPath = Path.Combine(Path.GetTempPath(), "codeplanner_test_settings.json");

@@ -172,8 +172,8 @@ namespace CodePlanner.Core
             => p != null && p.UserStories != null && p.UserStories.Count > 0
                && p.StoriesGenerationTimestamp.HasValue && p.StoriesGenerationTimestamp.Value < p.UpdatedAt;
 
-        public const string OutdatedMetricsNote = "⚠ The estimate was generated for an older version of the specification - we recommend recalculating.";
-        public const string OutdatedStoriesNote = "⚠ User stories were generated for an older version of the specification - we recommend regenerating them.";
+        public static string OutdatedMetricsNote => LocalizationService.T("⚠ Odhad byl vygenerován pro starší verzi specifikace – doporučujeme jej přepočítat.", "⚠ The estimate was generated for an older version of the specification - we recommend recalculating.");
+        public static string OutdatedStoriesNote => LocalizationService.T("⚠ User stories byly vygenerovány pro starší verzi specifikace – doporučujeme je přegenerovat.", "⚠ User stories were generated for an older version of the specification - we recommend regenerating them.");
 
         // ---------- rendering ----------
 
@@ -188,17 +188,17 @@ namespace CodePlanner.Core
         public static string RenderMarkdown(ProjectSpecification p)
         {
             var sb = new StringBuilder();
-            string name = string.IsNullOrWhiteSpace(p.Name) ? "(unnamed project)" : p.Name.Trim();
+            string name = string.IsNullOrWhiteSpace(p.Name) ? (LocalizationService.T("(nepojmenovaný projekt)", "(unnamed project)")) : p.Name.Trim();
 
-            sb.AppendLine("# Specification: " + name);
-            sb.AppendLine("*Project type: " + GetProjectTypeName(p.ProjectTypeKey) + "*");
-            sb.AppendLine("*Specification version " + p.Version + " · updated " + FormatDate(p.UpdatedAt) + "*");
-            sb.AppendLine("*Created by CodePlanner*");
+            sb.AppendLine("# " + LocalizationService.T("Specifikace: ", "Specification: ") + name);
+            sb.AppendLine("*" + LocalizationService.T("Typ projektu: ", "Project type: ") + GetProjectTypeName(p.ProjectTypeKey) + "*");
+            sb.AppendLine("*" + LocalizationService.T("Verze specifikace: ", "Specification version ") + p.Version + " · " + LocalizationService.T("aktualizováno ", "updated ") + FormatDate(p.UpdatedAt) + "*");
+            sb.AppendLine("*" + LocalizationService.T("Vytvořeno pomocí CodePlanner", "Created by CodePlanner") + "*");
             sb.AppendLine();
 
-            sb.AppendLine("## Original Idea");
+            sb.AppendLine("## " + LocalizationService.T("Původní nápad", "Original Idea"));
             if (string.IsNullOrWhiteSpace(p.Idea))
-                sb.AppendLine("> (not entered yet - type or dictate your idea)");
+                sb.AppendLine("> " + LocalizationService.T("(zatím nezadáno – napište nebo nadiktujte svůj nápad)", "(not entered yet - type or dictate your idea)"));
             else
                 foreach (var radek in p.Idea.Trim().Split('\n'))
                     sb.AppendLine("> " + radek.TrimEnd());
@@ -206,7 +206,7 @@ namespace CodePlanner.Core
 
             if (!string.IsNullOrWhiteSpace(p.ReferenceText))
             {
-                sb.AppendLine("## Reference Materials (" + (p.ReferenceName ?? "attachment") + ")");
+                sb.AppendLine("## " + LocalizationService.T("Referenční podklady (", "Reference Materials (") + (p.ReferenceName ?? LocalizationService.T("příloha", "attachment")) + ")");
                 sb.AppendLine("```text");
                 sb.AppendLine(p.ReferenceText.Trim());
                 sb.AppendLine("```");
@@ -215,8 +215,8 @@ namespace CodePlanner.Core
 
             if (!string.IsNullOrWhiteSpace(p.MockupName))
             {
-                sb.AppendLine("## User Interface Mockup");
-                sb.AppendLine("- Visual mockup attached: **" + p.MockupName + "** (image sent as visual context to Gemini)");
+                sb.AppendLine("## " + LocalizationService.T("Návrh uživatelského rozhraní", "User Interface Mockup"));
+                sb.AppendLine("- " + LocalizationService.T("Připojen vizuální návrh: ", "Visual mockup attached: ") + "**" + p.MockupName + "** " + LocalizationService.T("(obrázek odeslaný jako vizuální kontext pro Gemini)", "(image sent as visual context to Gemini)"));
                 sb.AppendLine();
             }
 
@@ -237,52 +237,52 @@ namespace CodePlanner.Core
                         sb.AppendLine("  " + radek.TrimEnd());
                 }
 
-                if (!neco) sb.AppendLine("- *(no decisions yet)*");
+                if (!neco) sb.AppendLine("- *" + LocalizationService.T("(dosud žádná rozhodnutí)", "(no decisions yet)") + "*");
                 sb.AppendLine();
             }
 
             var otevrene = GetOpenQuestions(p);
-            sb.AppendLine("## Open Questions");
+            sb.AppendLine("## " + LocalizationService.T("Otevřené otázky", "Open Questions"));
             if (otevrene.Count == 0)
-                sb.AppendLine("- *(none – all questions have been resolved)*");
+                sb.AppendLine("- *" + LocalizationService.T("(žádné – všechny otázky byly vyřešeny)", "(none – all questions have been resolved)") + "*");
             else
                 foreach (var ot in otevrene)
-                    sb.AppendLine("- [" + (ot.Impact == Impact.High ? "high impact" : "medium impact") + "] " + ot.GetText(p.ProjectTypeKey));
+                    sb.AppendLine("- [" + (ot.Impact == Impact.High ? LocalizationService.T("vysoký dopad", "high impact") : LocalizationService.T("střední dopad", "medium impact")) + "] " + ot.GetText(p.ProjectTypeKey));
             sb.AppendLine();
 
             var nalezy = ConsistencyChecker.Check(p);
             var maAiNalezy = p.AiFindings != null && p.AiFindings.Count > 0;
             if (nalezy.Count > 0 || maAiNalezy)
             {
-                sb.AppendLine("## Consistency Checks");
+                sb.AppendLine("## " + LocalizationService.T("Kontrola konzistence", "Consistency Checks"));
                 foreach (var n in nalezy)
-                    sb.AppendLine("- " + (n.Severity == Severity.Conflict ? "❗ **CONFLICT: " : "⚠️ **Warning: ") + n.Title + "** – " + n.Detail);
+                    sb.AppendLine("- " + (n.Severity == Severity.Conflict ? "❗ **" + LocalizationService.T("ROZPOR: ", "CONFLICT: ") : "⚠️ **" + LocalizationService.T("Varování: ", "Warning: ")) + n.Title + "** – " + n.Detail);
                 if (maAiNalezy)
                 {
                     sb.AppendLine();
-                    sb.AppendLine($"*Deep AI analysis from {FormatDate(p.AiCheckTimestamp ?? DateTime.Now)}:*");
+                    sb.AppendLine($"*" + LocalizationService.T("Hloubková AI analýza ze dne ", "Deep AI analysis from ") + $"{FormatDate(p.AiCheckTimestamp ?? DateTime.Now)}:*");
                     foreach (var n in p.AiFindings!)
                     {
                         bool isConflict = string.Equals(n.Severity, "Conflict", StringComparison.OrdinalIgnoreCase) || string.Equals(n.Severity, "Rozpor", StringComparison.OrdinalIgnoreCase);
-                        sb.AppendLine("- " + (isConflict ? "🧠❗ **CONFLICT (AI): " : "🧠⚠️ **Warning (AI): ") + n.Title + "** – " + n.Detail);
+                        sb.AppendLine("- " + (isConflict ? "🧠❗ **" + LocalizationService.T("ROZPOR (AI): ", "CONFLICT (AI): ") : "🧠⚠️ **" + LocalizationService.T("Varování (AI): ", "Warning (AI): ")) + n.Title + "** – " + n.Detail);
                     }
                 }
                 sb.AppendLine();
             }
 
-            sb.AppendLine("## Status Summary");
-            sb.AppendLine("- Answered: " + GetAnsweredCount(p) + " / " + GetProjectQuestions(p).Count());
-            sb.AppendLine("- Marked assumptions: " + GetAssumptionsCount(p));
-            sb.AppendLine("- Open questions: " + otevrene.Count);
+            sb.AppendLine("## " + LocalizationService.T("Stav specifikace", "Status Summary"));
+            sb.AppendLine("- " + LocalizationService.T("Zodpovězeno: ", "Answered: ") + GetAnsweredCount(p) + " / " + GetProjectQuestions(p).Count());
+            sb.AppendLine("- " + LocalizationService.T("Označené předpoklady: ", "Marked assumptions: ") + GetAssumptionsCount(p));
+            sb.AppendLine("- " + LocalizationService.T("Otevřené otázky: ", "Open questions: ") + otevrene.Count);
             if (AreMetricsOutdated(p))
                 sb.AppendLine("- " + OutdatedMetricsNote);
             if (AreStoriesOutdated(p))
                 sb.AppendLine("- " + OutdatedStoriesNote);
             sb.AppendLine();
 
-            sb.AppendLine("## Decision Log");
+            sb.AppendLine("## " + LocalizationService.T("Log rozhodnutí", "Decision Log"));
             if (p.ChangeLog.Count == 0)
-                sb.AppendLine("- *(no decisions yet)*");
+                sb.AppendLine("- *" + LocalizationService.T("(dosud žádná rozhodnutí)", "(no decisions yet)") + "*");
             else
                 foreach (var r in p.ChangeLog)
                     sb.AppendLine("- " + FormatDate(r.Timestamp) + " · **" + r.Action + "** · " + r.Detail);
@@ -348,14 +348,14 @@ namespace CodePlanner.Core
         public static string RenderHtml(ProjectSpecification p)
         {
             var sb = new StringBuilder();
-            string name = string.IsNullOrWhiteSpace(p.Name) ? "(nepojmenovaný projekt)" : p.Name.Trim();
+            string name = string.IsNullOrWhiteSpace(p.Name) ? (LocalizationService.T("(nepojmenovaný projekt)", "(unnamed project)")) : p.Name.Trim();
             
             sb.AppendLine("<!DOCTYPE html>");
-            sb.AppendLine("<html lang=\"cs\">");
+            sb.AppendLine($"<html lang=\"{LocalizationService.T("cs", "en")}\">");
             sb.AppendLine("<head>");
             sb.AppendLine("    <meta charset=\"UTF-8\">");
             sb.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            sb.AppendLine($"    <title>Specifikace: {System.Net.WebUtility.HtmlEncode(name)}</title>");
+            sb.AppendLine($"    <title>{LocalizationService.T("Specifikace: ", "Specification: ")}{System.Net.WebUtility.HtmlEncode(name)}</title>");
             sb.AppendLine("    <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\">");
             sb.AppendLine("    <style>");
             sb.AppendLine("        :root {");
@@ -438,29 +438,29 @@ namespace CodePlanner.Core
             sb.AppendLine("    </script>");
             sb.AppendLine("    <div class=\"container\">");
             sb.AppendLine("        <header>");
-            sb.AppendLine($"            <h1>Specification: {System.Net.WebUtility.HtmlEncode(name)}</h1>");
+            sb.AppendLine($"            <h1>{LocalizationService.T("Specifikace: ", "Specification: ")}{System.Net.WebUtility.HtmlEncode(name)}</h1>");
             sb.AppendLine("            <div class=\"meta-subtitle\">");
-            sb.AppendLine($"                <span>Project type: <strong>{System.Net.WebUtility.HtmlEncode(GetProjectTypeName(p.ProjectTypeKey))}</strong></span>");
-            sb.AppendLine($"                <span>Version: <strong>{p.Version}</strong></span>");
-            sb.AppendLine($"                <span>Updated: <strong>{FormatDate(p.UpdatedAt)}</strong></span>");
+            sb.AppendLine($"                <span>{LocalizationService.T("Typ projektu: ", "Project type: ")}<strong>{System.Net.WebUtility.HtmlEncode(GetProjectTypeName(p.ProjectTypeKey))}</strong></span>");
+            sb.AppendLine($"                <span>{LocalizationService.T("Verze: ", "Version: ")}<strong>{p.Version}</strong></span>");
+            sb.AppendLine($"                <span>{LocalizationService.T("Aktualizováno: ", "Updated: ")}<strong>{FormatDate(p.UpdatedAt)}</strong></span>");
             sb.AppendLine("            </div>");
             sb.AppendLine("            <button class=\"theme-switch\" onclick=\"toggleTheme()\">");
-            sb.AppendLine("                <span id=\"theme-icon\">🌙</span> <span id=\"theme-label\">Dark Mode</span>");
+            sb.AppendLine($"                <span id=\"theme-icon\">🌙</span> <span id=\"theme-label\">{LocalizationService.T("Tmavý režim", "Dark Mode")}</span>");
             sb.AppendLine("            </button>");
             sb.AppendLine("        </header>");
             sb.AppendLine();
             sb.AppendLine("        <div class=\"search-bar-container\">");
-            sb.AppendLine("            <input type=\"text\" class=\"search-input\" id=\"searchInput\" onkeyup=\"filterContent()\" placeholder=\"Search in questions, answers or backlog...\">");
+            sb.AppendLine($"            <input type=\"text\" class=\"search-input\" id=\"searchInput\" onkeyup=\"filterContent()\" placeholder=\"{LocalizationService.T("Hledat v otázkách, odpovědích nebo backlogu...", "Search in questions, answers or backlog...")}\">");
             sb.AppendLine("        </div>");
             sb.AppendLine();
             sb.AppendLine("        <div class=\"dashboard-grid\">");
             sb.AppendLine("            <!-- LEFT COLUMN: Specification and Idea -->");
             sb.AppendLine("            <div class=\"left-column\">");
             sb.AppendLine("                <div class=\"card filterable-section\">");
-            sb.AppendLine("                    <div class=\"card-title\">Original Idea</div>");
+            sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Původní nápad", "Original Idea")}</div>");
             sb.AppendLine("                    <div class=\"napad-quote\">");
             if (string.IsNullOrWhiteSpace(p.Idea))
-                sb.AppendLine("                        (not entered yet - type or dictate your idea)");
+                sb.AppendLine($"                        {LocalizationService.T("(zatím nezadáno – napište nebo nadiktujte svůj nápad)", "(not entered yet - type or dictate your idea)")}");
             else
                 foreach (var radek in p.Idea.Trim().Split('\n'))
                     sb.AppendLine($"                        {System.Net.WebUtility.HtmlEncode(radek.TrimEnd())}<br>");
@@ -479,7 +479,7 @@ namespace CodePlanner.Core
                 foreach (var ot in odpovezene)
                 {
                     var odp = GetAnswerFor(p, ot.Id)!;
-                    string predpokladBadge = odp.IsAssumption ? "<span class=\"badge badge-predpoklad\">Assumption</span>" : "";
+                    string predpokladBadge = odp.IsAssumption ? $"<span class=\"badge badge-predpoklad\">{LocalizationService.T("Předpoklad", "Assumption")}</span>" : "";
                     sb.AppendLine("                    <div class=\"spec-item\">");
                     sb.AppendLine($"                        <div class=\"spec-question\">{System.Net.WebUtility.HtmlEncode(ot.GetText(p.ProjectTypeKey))}{predpokladBadge}</div>");
                     sb.AppendLine($"                        <div class=\"spec-answer\">{System.Net.WebUtility.HtmlEncode(odp.Text)}</div>");
@@ -499,29 +499,29 @@ namespace CodePlanner.Core
             {
                 string komplexitaClass = (p.Metrics.Complexity.Contains("High") || p.Metrics.Complexity.Contains("Vysoká")) ? "prio-high" : ((p.Metrics.Complexity.Contains("Medium") || p.Metrics.Complexity.Contains("Střední")) ? "prio-med" : "prio-low");
                 sb.AppendLine("                <div class=\"card filterable-section\">");
-                sb.AppendLine("                    <div class=\"card-title\">Project Metrics</div>");
+                sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Metriky projektu", "Project Metrics")}</div>");
                 if (AreMetricsOutdated(p))
                     sb.AppendLine($"                    <div class=\"stale-note\" style=\"background-color: rgba(255,193,7,0.15); border: 1px solid var(--prio-med); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 0.85rem;\">{OutdatedMetricsNote}</div>");
                 sb.AppendLine("                    <div class=\"metric-cards-container\">");
                 sb.AppendLine("                        <div class=\"metric-mini-card\">");
-                sb.AppendLine("                            <div class=\"metric-mini-label\">Development (Estimate)</div>");
+                sb.AppendLine($"                            <div class=\"metric-mini-label\">{LocalizationService.T("Doba vývoje (odhad)", "Development (Estimate)")}</div>");
                 sb.AppendLine($"                            <div class=\"metric-mini-value\">{System.Net.WebUtility.HtmlEncode(p.Metrics.TimeEstimateMin)} - {System.Net.WebUtility.HtmlEncode(p.Metrics.TimeEstimateMax)}</div>");
                 sb.AppendLine("                        </div>");
                 sb.AppendLine("                        <div class=\"metric-mini-card\">");
-                sb.AppendLine("                            <div class=\"metric-mini-label\">Complexity</div>");
+                sb.AppendLine($"                            <div class=\"metric-mini-label\">{LocalizationService.T("Komplexita", "Complexity")}</div>");
                 sb.AppendLine($"                            <div class=\"metric-mini-value\"><span class=\"badge badge-prio badge-{komplexitaClass}\" style=\"margin-left:0;\">{System.Net.WebUtility.HtmlEncode(p.Metrics.Complexity)}</span></div>");
                 sb.AppendLine("                        </div>");
                 sb.AppendLine("                        <div class=\"metric-mini-card\">");
-                sb.AppendLine("                            <div class=\"metric-mini-label\">Budget</div>");
+                sb.AppendLine($"                            <div class=\"metric-mini-label\">{LocalizationService.T("Rozpočet", "Budget")}</div>");
                 sb.AppendLine($"                            <div class=\"metric-mini-value\">{System.Net.WebUtility.HtmlEncode(p.Metrics.RecommendedBudget)}</div>");
                 sb.AppendLine("                        </div>");
                 sb.AppendLine("                        <div class=\"metric-mini-card\">");
-                sb.AppendLine("                            <div class=\"metric-mini-label\">Recommended Team</div>");
+                sb.AppendLine($"                            <div class=\"metric-mini-label\">{LocalizationService.T("Doporučený tým", "Recommended Team")}</div>");
                 sb.AppendLine($"                            <div class=\"metric-mini-value\">{System.Net.WebUtility.HtmlEncode(p.Metrics.TeamComposition)}</div>");
                 sb.AppendLine("                        </div>");
                 sb.AppendLine("                    </div>");
                 sb.AppendLine("                    <div style=\"font-size:0.85rem; line-height:1.4; border-top:1px solid var(--border); padding-top:12px;\">");
-                sb.AppendLine("                        <strong>Architecture and Technology:</strong><br>");
+                sb.AppendLine($"                        <strong>{LocalizationService.T("Architektura a technologie:", "Architecture and Technology:")}</strong><br>");
                 foreach (var radek in p.Metrics.TechnicalAnalysis.Split('\n'))
                 {
                     if (string.IsNullOrWhiteSpace(radek)) continue;
@@ -537,11 +537,11 @@ namespace CodePlanner.Core
             if (otevrene.Count > 0)
             {
                 sb.AppendLine("                <div class=\"card filterable-section\">");
-                sb.AppendLine($"                    <div class=\"card-title\">Open Questions <span class=\"badge badge-predpoklad\" style=\"margin-left:8px;\">{otevrene.Count}</span></div>");
+                sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Otevřené otázky", "Open Questions")} <span class=\"badge badge-predpoklad\" style=\"margin-left:8px;\">{otevrene.Count}</span></div>");
                 sb.AppendLine("                    <ul style=\"padding-left:20px; font-size:0.9rem;\">");
                 foreach (var ot in otevrene)
                 {
-                    string dopadText = ot.Impact == Impact.High ? "high impact" : "medium impact";
+                    string dopadText = ot.Impact == Impact.High ? LocalizationService.T("vysoký dopad", "high impact") : LocalizationService.T("střední dopad", "medium impact");
                     sb.AppendLine($"                        <li style=\"margin-bottom:6px;\"><strong>{System.Net.WebUtility.HtmlEncode(ot.GetText(p.ProjectTypeKey))}</strong> <span style=\"color:var(--text-light); font-size:0.8rem;\">({dopadText})</span></li>");
                 }
                 sb.AppendLine("                    </ul>");
@@ -555,24 +555,24 @@ namespace CodePlanner.Core
             if (nalezy.Count > 0 || maAiNalezy)
             {
                 sb.AppendLine("                <div class=\"card filterable-section\">");
-                sb.AppendLine("                    <div class=\"card-title\">Consistency Checks</div>");
+                sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Kontrola konzistence", "Consistency Checks")}</div>");
                 sb.AppendLine("                    <div>");
                 foreach (var n in nalezy)
                 {
                     string fClass = n.Severity == Severity.Conflict ? "finding-conflict" : "finding-warning";
-                    string pfx = n.Severity == Severity.Conflict ? "❗ <strong>CONFLICT:</strong> " : "⚠️ <strong>Warning:</strong> ";
+                    string pfx = n.Severity == Severity.Conflict ? "❗ <strong>" + LocalizationService.T("ROZPOR: ", "CONFLICT: ") + "</strong> " : "⚠️ <strong>" + LocalizationService.T("Varování: ", "Warning: ") + "</strong> ";
                     sb.AppendLine($"                        <div class=\"{fClass}\">");
                     sb.AppendLine($"                            {pfx}<strong>{System.Net.WebUtility.HtmlEncode(n.Title)}</strong> – {System.Net.WebUtility.HtmlEncode(n.Detail)}");
                     sb.AppendLine("                        </div>");
                 }
                 if (maAiNalezy)
                 {
-                    sb.AppendLine($"                        <div style=\"margin: 12px 0 6px 0; font-size: 0.85rem; color: var(--text-light); font-style: italic;\">🧠 Deep AI analysis from {FormatDate(p.AiCheckTimestamp ?? DateTime.Now)}:</div>");
+                    sb.AppendLine($"                        <div style=\"margin: 12px 0 6px 0; font-size: 0.85rem; color: var(--text-light); font-style: italic;\">🧠 {LocalizationService.T("Hloubková AI analýza ze dne ", "Deep AI analysis from ")}{FormatDate(p.AiCheckTimestamp ?? DateTime.Now)}:</div>");
                     foreach (var n in p.AiFindings!)
                     {
                         bool isConflict = string.Equals(n.Severity, "Conflict", StringComparison.OrdinalIgnoreCase) || string.Equals(n.Severity, "Rozpor", StringComparison.OrdinalIgnoreCase);
                         string fClass = isConflict ? "finding-conflict" : "finding-warning";
-                        string pfx = isConflict ? "🧠❗ <strong>CONFLICT (AI):</strong> " : "🧠⚠️ <strong>Warning (AI):</strong> ";
+                        string pfx = isConflict ? "🧠❗ <strong>" + LocalizationService.T("ROZPOR (AI): ", "CONFLICT (AI): ") + "</strong> " : "🧠⚠️ <strong>" + LocalizationService.T("Varování (AI): ", "Warning (AI): ") + "</strong> ";
                         sb.AppendLine($"                        <div class=\"{fClass}\">");
                         sb.AppendLine($"                            {pfx}<strong>{System.Net.WebUtility.HtmlEncode(n.Title)}</strong> – {System.Net.WebUtility.HtmlEncode(n.Detail)}");
                         sb.AppendLine("                        </div>");
@@ -587,7 +587,7 @@ namespace CodePlanner.Core
             if (p.UserStories != null && p.UserStories.Count > 0)
             {
                 sb.AppendLine("                <div class=\"card filterable-section\">");
-                sb.AppendLine("                    <div class=\"card-title\">Agile Backlog</div>");
+                sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Agilní backlog", "Agile Backlog")}</div>");
                 if (AreStoriesOutdated(p))
                     sb.AppendLine($"                    <div class=\"stale-note\" style=\"background-color: rgba(255,193,7,0.15); border: 1px solid var(--prio-med); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 0.85rem;\">{OutdatedStoriesNote}</div>");
                 foreach (var us in p.UserStories)
@@ -616,7 +616,7 @@ namespace CodePlanner.Core
             if (p.ChangeLog != null && p.ChangeLog.Count > 0)
             {
                 sb.AppendLine("                <div class=\"card filterable-section\">");
-                sb.AppendLine("                    <div class=\"card-title\">Decision Log</div>");
+                sb.AppendLine($"                    <div class=\"card-title\">{LocalizationService.T("Log rozhodnutí", "Decision Log")}</div>");
                 sb.AppendLine("                    <div style=\"font-size:0.85rem; max-height:250px; overflow-y:auto;\">");
                 foreach (var log in p.ChangeLog)
                 {
@@ -637,8 +637,9 @@ namespace CodePlanner.Core
             sb.AppendLine("    <script>");
             sb.AppendLine("        document.addEventListener('DOMContentLoaded', () => {");
             sb.AppendLine("            const theme = document.body.getAttribute('data-theme');");
+            sb.AppendLine($"            const isCs = {(string.Equals(LocalizationService.CurrentLanguage, "cs") ? "true" : "false")};");
             sb.AppendLine("            document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀' : '🌙';");
-            sb.AppendLine("            document.getElementById('theme-label').innerText = theme === 'dark' ? 'Light Mode' : 'Dark Mode';");
+            sb.AppendLine("            document.getElementById('theme-label').innerText = theme === 'dark' ? (isCs ? 'Světlý režim' : 'Light Mode') : (isCs ? 'Tmavý režim' : 'Dark Mode');");
             sb.AppendLine("        });");
             sb.AppendLine();
             sb.AppendLine("        function toggleTheme() {");
@@ -647,7 +648,8 @@ namespace CodePlanner.Core
             sb.AppendLine("            body.setAttribute('data-theme', theme);");
             sb.AppendLine("            localStorage.setItem('theme', theme);");
             sb.AppendLine("            document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀' : '🌙';");
-            sb.AppendLine("            document.getElementById('theme-label').innerText = theme === 'dark' ? 'Light Mode' : 'Dark Mode';");
+            sb.AppendLine($"            const isCs = {(string.Equals(LocalizationService.CurrentLanguage, "cs") ? "true" : "false")};");
+            sb.AppendLine("            document.getElementById('theme-label').innerText = theme === 'dark' ? (isCs ? 'Světlý režim' : 'Light Mode') : (isCs ? 'Tmavý režim' : 'Dark Mode');");
             sb.AppendLine("        }");
             sb.AppendLine();
             sb.AppendLine("        function toggleStory(checkbox, id) {");

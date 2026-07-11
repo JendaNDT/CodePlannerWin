@@ -48,12 +48,12 @@ namespace CodePlanner.Core
                 var o = SpecificationService.GetAnswerFor(p, ot.Id);
                 if (o != null && !o.IsAssumption && !string.IsNullOrWhiteSpace(o.Text))
                 {
-                    list.Add("question \"" + ot.GetText(p.ProjectTypeKey) + "\": '" + o.Text + "'");
+                    list.Add(LocalizationService.T("otázka", "question") + " \"" + ot.GetText(p.ProjectTypeKey) + "\": '" + o.Text + "'");
                 }
             }
             if (!string.IsNullOrWhiteSpace(p.Idea))
             {
-                list.Add("original idea: '" + p.Idea + "'");
+                list.Add(LocalizationService.T("původní nápad", "original idea") + ": '" + p.Idea + "'");
             }
             return list;
         }
@@ -117,8 +117,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Conflict,
-                    Title = "Offline vs. online",
-                    Detail = "Technology section says \"runs offline\", but " + zdroj + " mentions \"" + slovo + "\". Decide which one applies."
+                    Title = LocalizationService.T("Offline vs. online", "Offline vs. online"),
+                    Detail = LocalizationService.T("Sekce Technika říká \"běží offline\", ale " + zdroj + " zmiňuje \"" + slovo + "\". Rozhodněte, co platí.", "Technology section says \"runs offline\", but " + zdroj + " mentions \"" + slovo + "\". Decide which one applies.")
                 });
         }
 
@@ -129,8 +129,8 @@ namespace CodePlanner.Core
             findings.Add(new ConsistencyFinding
             {
                 Severity = Severity.Warning,
-                Title = "Web + fully offline",
-                Detail = "A web application without internet only works as a PWA with offline support - verify if this is what you mean."
+                Title = LocalizationService.T("Web + plně offline", "Web + fully offline"),
+                Detail = LocalizationService.T("Webová aplikace bez internetu funguje pouze jako PWA s offline podporou – ověřte, zda je to tak myšleno.", "A web application without internet only works as a PWA with offline support - verify if this is what you mean.")
             });
         }
 
@@ -148,8 +148,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Conflict,
-                    Title = "Personal Data",
-                    Detail = "Data section says \"no personal data\", but " + zdroj + " mentions \"" + slovo + "\". Personal data = GDPR and higher compliance requirements."
+                    Title = LocalizationService.T("Osobní údaje", "Personal Data"),
+                    Detail = LocalizationService.T("Sekce Data říká \"žádné osobní údaje\", ale " + zdroj + " zmiňuje \"" + slovo + "\". Osobní údaje znamenají GDPR a vyšší nároky na zabezpečení.", "Data section says \"no personal data\", but " + zdroj + " mentions \"" + slovo + "\". Personal data = GDPR and higher compliance requirements.")
                 });
         }
 
@@ -181,8 +181,8 @@ namespace CodePlanner.Core
                         findings.Add(new ConsistencyFinding
                         {
                             Severity = Severity.Warning,
-                            Title = "Non-goal described as a goal",
-                            Detail = "In non-goals you exclude \"" + fragment.Trim() + "\", but " + zdroj + " contains a mention of \"" + slovo + "\"."
+                            Title = LocalizationService.T("Non-goal popsaný jako cíl", "Non-goal described as a goal"),
+                            Detail = LocalizationService.T("V non-goals vylučujete \"" + fragment.Trim() + "\", ale " + zdroj + " obsahuje zmínku o \"" + slovo + "\".", "In non-goals you exclude \"" + fragment.Trim() + "\", but " + zdroj + " contains a mention of \"" + slovo + "\".")
                         });
                         if (hitu >= 3) return; // Max 3 warnings
                     }
@@ -203,8 +203,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "Vague acceptance criteria",
-                    Detail = "Acceptance criteria say \"according to specification / when it works\". Try to list measurable goals (e.g. manual scenario walkthrough)."
+                    Title = LocalizationService.T("Vágní akceptační kritéria", "Vague acceptance criteria"),
+                    Detail = LocalizationService.T("Akceptační kritéria říkají \"podle specifikace / až to bude fungovat\". Zkuste uvést měřitelné cíle (např. ruční průchod scénářem).", "Acceptance criteria say \"according to specification / when it works\". Try to list measurable goals (e.g. manual scenario walkthrough).")
                 });
         }
 
@@ -223,8 +223,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Conflict,
-                    Title = "Data export vs. no export",
-                    Detail = "Export section rejects exports, but " + zdroj + " mentions \"" + slovo + "\". Decide if data can be downloaded."
+                    Title = LocalizationService.T("Export dat vs. žádný export", "Data export vs. no export"),
+                    Detail = LocalizationService.T("Sekce Export odmítá exporty, ale " + zdroj + " zmiňuje \"" + slovo + "\". Rozhodněte, zda lze data stahovat.", "Export section rejects exports, but " + zdroj + " mentions \"" + slovo + "\". Decide if data can be downloaded.")
                 });
         }
 
@@ -241,8 +241,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "Too broad platform scope",
-                    Detail = "You plan web, mobile, and desktop at the same time. For MVP, it is recommended to start with a single platform (e.g., web)."
+                    Title = LocalizationService.T("Příliš široký rozsah platforem", "Too broad platform scope"),
+                    Detail = LocalizationService.T("Plánujete web, mobil i desktop současně. Pro MVP se doporučuje začít s jedinou platformou (např. webem).", "You plan web, mobile, and desktop at the same time. For MVP, it is recommended to start with a single platform (e.g., web).")
                 });
         }
 
@@ -253,8 +253,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "High number of assumptions (" + pCount + ")",
-                    Detail = "You have replaced " + pCount + " questions with default assumptions. Try answering them for a more precise specification."
+                    Title = LocalizationService.T("Vysoký počet předpokladů (" + pCount + ")", "High number of assumptions (" + pCount + ")"),
+                    Detail = LocalizationService.T("Nahradili jste " + pCount + " otázek výchozími předpoklady. Zkuste na ně odpovědět pro přesnější specifikaci.", "You have replaced " + pCount + " questions with default assumptions. Try answering them for a more precise specification.")
                 });
         }
 
@@ -264,8 +264,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "Empty original idea",
-                    Detail = "The specification contains answers to questions, but the original idea is missing. Complete the original idea in step 1."
+                    Title = LocalizationService.T("Chybí původní nápad", "Empty original idea"),
+                    Detail = LocalizationService.T("Specifikace obsahuje odpovědi na otázky, ale chybí původní nápad. Doplňte původní nápad v kroku 1.", "The specification contains answers to questions, but the original idea is missing. Complete the original idea in step 1.")
                 });
         }
 
@@ -282,8 +282,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "SQLite database on web",
-                    Detail = "Technology section lists a web application and SQLite database. SQLite does not run in a standard browser. Consider LocalStorage/IndexedDB, or specify it as WASM/backend."
+                    Title = LocalizationService.T("SQLite databáze na webu", "SQLite database on web"),
+                    Detail = LocalizationService.T("Sekce Technika uvádí webovou aplikaci a SQLite databázi. SQLite v běžném prohlížeči neběží. Zvažte LocalStorage/IndexedDB, případně specifikujte použití WASM nebo backendu.", "Technology section lists a web application and SQLite database. SQLite does not run in a standard browser. Consider LocalStorage/IndexedDB, or specify it as WASM/backend.")
                 });
             }
         }
@@ -303,8 +303,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "User roles without authentication",
-                    Detail = "You mention user roles (e.g. administrator, permissions), but technology or data does not address authentication. How will roles be identified?"
+                    Title = LocalizationService.T("Uživatelské role bez přihlašování", "User roles without authentication"),
+                    Detail = LocalizationService.T("Zmiňujete uživatelské role (např. administrátor, oprávnění), ale technika ani data neřeší přihlašování. Jak se budou role identifikovat?", "You mention user roles (e.g. administrator, permissions), but technology or data does not address authentication. How will roles be identified?")
                 });
             }
         }
@@ -327,8 +327,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "Missing backup strategy",
-                    Detail = "The application utilizes a database, but the risk plan does not mention backup (backup, dump). Consider adding a backup strategy."
+                    Title = LocalizationService.T("Chybí strategie zálohování", "Missing backup strategy"),
+                    Detail = LocalizationService.T("Aplikace využívá databázi, ale plán rizik nezmiňuje zálohování (záloha, backup). Zvažte doplnění strategie zálohování.", "The application utilizes a database, but the risk plan does not mention backup (backup, dump). Consider adding a backup strategy.")
                 });
             }
         }
@@ -358,8 +358,8 @@ namespace CodePlanner.Core
                 findings.Add(new ConsistencyFinding
                 {
                     Severity = Severity.Warning,
-                    Title = "Missing external API documentation",
-                    Detail = "The project mentions integrating an external API or third-party services, but references to their documentation (documentation, swagger, OpenAPI) are missing."
+                    Title = LocalizationService.T("Chybí dokumentace k externímu API", "Missing external API documentation"),
+                    Detail = LocalizationService.T("Projekt zmiňuje integraci externího API nebo služeb třetích stran, ale chybí odkazy na jejich dokumentaci (dokumentace, swagger, OpenAPI).", "The project mentions integrating an external API or third-party services, but references to their documentation (documentation, swagger, OpenAPI) are missing.")
                 });
             }
         }

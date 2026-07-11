@@ -19,7 +19,7 @@ CodePlanner je lehký, přenosný (single-file `.exe`) desktopový asistent pro 
 - **v1.9 – HTML micro-site**: Export celého projektu do jednoho interaktivního HTML souboru s přepínačem tmavého režimu, live search a odškrtávacím backlogem.
 - **v2.0 – Rebranding**: Kompletní přejmenování projektu, složek, namespaces a sestavení na **CodePlanner** a publikace na GitHub.
 - **v2.1 – Překlad do angličtiny, design systém, nová pravidla**: Překlad kompletního jádra, API klienta, hlasového nahrávání a formulářů z češtiny do angličtiny. Zajištěna 100% zpětná kompatibilita pro načítání starých českých specifikací `.vcbrief`. Sjednoceny barvy a písma do `DesignSystem.cs`, čímž se zamezilo GDI leakům. Přidána nová pravidla konzistence: **Rule 12 (strategie zálohování)** a **Rule 13 (dokumentace k externímu API)**.
-- **v2.2 – Robustní validace a opravy chyb**: Implementována doménová validace v loaderu, Safe Load Workflow pro bezpečné otevírání projektů a vyřešení chyb z auditu.
+- **v2.2 – Robustní validace, kompletní lokalizace a opravy chyb**: Implementována doménová validace v loaderu, Safe Load Workflow pro bezpečné otevírání projektů a vyřešení chyb z auditu. Kompletně do-lokalizovány zbývající dialogy, menu, statusy, nápovědy a PDF exporty, čímž vznikl plně bilingvní (česko-anglický) systém. Repozitář byl vyčištěn od dočasných a starých sestavení.
 
 ---
 

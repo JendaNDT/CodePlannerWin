@@ -44,11 +44,11 @@ namespace CodePlanner
         private bool _snapshotAnalyzyExistuje = false;                   // v této session vznikla záloha před AI analýzou
         private Button? _tlacitkoDiktovaniAktivni = null;                 // které mikrofonní tlačítko právě nahrává
         private ToolStripButton btnVratitAnalyzu = default!;                        // „↩ Vrátit analýzu“ v toolbaru
-        private LinkLabel lblApiBanner = default!;                                  // banner „chybí API klíč“ nahoře
+        private LinkLabel lblApiBanner = default!;                                  // banner „chybí API klíč“ n，oře
 
-        private const string PlaceholderChatu = "e.g. 'What is missing in the requirements?' or 'What will be the hardest part?'";
-        private const string TipDiktovani = "Hold and talk, or click to toggle. Transcription is powered by AI (Gemini). Tip: Win+H is free built-in Windows dictation.";
-        private const string RadaMikrofon = "Check your microphone in Windows Settings → Privacy → Microphone.";
+        private static string PlaceholderChatu => CodePlanner.Core.LocalizationService.T("např. 'Co chybí v požadavcích?' nebo 'Co bude nejobtížnější část?'", "e.g. 'What is missing in the requirements?' or 'What will be the hardest part?'");
+        private static string TipDiktovani => CodePlanner.Core.LocalizationService.T("Držte a mluvte, nebo klikněte pro přepnutí. Přepis je poháněn AI (Gemini). Tip: Win+H je vestavěné bezplatné diktování ve Windows.", "Hold and talk, or click to toggle. Transcription is powered by AI (Gemini). Tip: Win+H is free built-in Windows dictation.");
+        private static string RadaMikrofon => CodePlanner.Core.LocalizationService.T("Zkontrolujte mikrofon v Nastavení Windows → Soukromí → Mikrofon.", "Check your microphone in Windows Settings → Privacy → Microphone.");
 
         private static string SlozkaDatAplikace
             => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodePlanner");
@@ -281,25 +281,31 @@ namespace CodePlanner
                 return b;
             }
 
-            tool.Items.Add(Tlacitko("🗒 New", "Create a new project (Ctrl+N)", (s, e) => { if (ConfirmUnsavedChanges()) NewProject(false); }));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("🗒 Nový", "🗒 New"),
+                CodePlanner.Core.LocalizationService.T("Vytvořit nový projekt (Ctrl+N)", "Create a new project (Ctrl+N)"),
+                (s, e) => { if (ConfirmUnsavedChanges()) NewProject(false); }));
             
-            btnOtevritSplit = new ToolStripSplitButton("📂 Open...")
+            btnOtevritSplit = new ToolStripSplitButton(CodePlanner.Core.LocalizationService.T("📂 Otevřít...", "📂 Open..."))
             {
-                ToolTipText = "Open an existing project (Ctrl+O)",
+                ToolTipText = CodePlanner.Core.LocalizationService.T("Otevřít existující projekt (Ctrl+O)", "Open an existing project (Ctrl+O)"),
                 Padding = new Padding(4, 2, 4, 2),
                 DisplayStyle = ToolStripItemDisplayStyle.Text
             };
             btnOtevritSplit.ButtonClick += (s, e) => OpenProject();
             tool.Items.Add(btnOtevritSplit);
 
-            tool.Items.Add(Tlacitko("💾 Save", "Save the project (Ctrl+S)", (s, e) => SaveProject()));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("💾 Uložit", "💾 Save"),
+                CodePlanner.Core.LocalizationService.T("Uložit projekt (Ctrl+S)", "Save the project (Ctrl+S)"),
+                (s, e) => SaveProject()));
             tool.Items.Add(new ToolStripSeparator());
 
-            var btnExporty = new ToolStripDropDownButton("⬇ Export")
+            var btnExporty = new ToolStripDropDownButton(CodePlanner.Core.LocalizationService.T("⬇ Exportovat", "⬇ Export"))
             {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 Padding = new Padding(4, 2, 4, 2),
-                ToolTipText = "Specification export options"
+                ToolTipText = CodePlanner.Core.LocalizationService.T("Možnosti exportu specifikace", "Specification export options")
             };
 
             ToolStripMenuItem PolozkaMenu(string text, string tip, EventHandler klik)
@@ -312,22 +318,43 @@ namespace CodePlanner
                 return item;
             }
 
-            btnExporty.DropDownItems.Add(PolozkaMenu("Markdown... (Ctrl+M)", "For humans – readable document", (s, e) => Export(true)));
-            btnExporty.DropDownItems.Add(PolozkaMenu("JSON... (Ctrl+J)", "For AI agent – machine readable data", (s, e) => Export(false)));
-            btnExporty.DropDownItems.Add(PolozkaMenu("PDF... (Ctrl+P)", "Export specification to PDF for clients", (s, e) => ExportPdf()));
-            btnExporty.DropDownItems.Add(PolozkaMenu("HTML Web...", "Export specification to interactive HTML website", (s, e) => ExportHtml()));
+            btnExporty.DropDownItems.Add(PolozkaMenu(
+                CodePlanner.Core.LocalizationService.T("Markdown... (Ctrl+M)", "Markdown... (Ctrl+M)"),
+                CodePlanner.Core.LocalizationService.T("Pro lidi – čitelný dokument", "For humans – readable document"),
+                (s, e) => Export(true)));
+            btnExporty.DropDownItems.Add(PolozkaMenu(
+                CodePlanner.Core.LocalizationService.T("JSON... (Ctrl+J)", "JSON... (Ctrl+J)"),
+                CodePlanner.Core.LocalizationService.T("Pro AI agenty – strojově čitelná data", "For AI agent – machine readable data"),
+                (s, e) => Export(false)));
+            btnExporty.DropDownItems.Add(PolozkaMenu(
+                CodePlanner.Core.LocalizationService.T("PDF... (Ctrl+P)", "PDF... (Ctrl+P)"),
+                CodePlanner.Core.LocalizationService.T("Exportovat specifikaci do PDF pro klienty", "Export specification to PDF for clients"),
+                (s, e) => ExportPdf()));
+            btnExporty.DropDownItems.Add(PolozkaMenu(
+                CodePlanner.Core.LocalizationService.T("HTML Web...", "HTML Web..."),
+                CodePlanner.Core.LocalizationService.T("Exportovat specifikaci do interaktivního HTML webu", "Export specification to interactive HTML website"),
+                (s, e) => ExportHtml()));
 
             tool.Items.Add(btnExporty);
             tool.Items.Add(new ToolStripSeparator());
 
-            tool.Items.Add(Tlacitko("💡 User Stories...", "Manage and generate developer user stories", (s, e) => ShowUserStories()));
-            tool.Items.Add(Tlacitko("📊 Estimate & Metrics...", "Project metrics and AI time estimate", (s, e) => ShowMetrics()));
-            tool.Items.Add(Tlacitko("✔ Consistency Check...", "Check specification consistency – conflicts and warnings", (s, e) => ShowFindings(true)));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("💡 User Stories...", "💡 User Stories..."),
+                CodePlanner.Core.LocalizationService.T("Správa a generování uživatelských příběhů", "Manage and generate developer user stories"),
+                (s, e) => ShowUserStories()));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("📊 Odhady a metriky...", "📊 Estimate & Metrics..."),
+                CodePlanner.Core.LocalizationService.T("Metriky projektu a AI časový odhad", "Project metrics and AI time estimate"),
+                (s, e) => ShowMetrics()));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("✔ Kontrola konzistence...", "✔ Consistency Check..."),
+                CodePlanner.Core.LocalizationService.T("Zkontrolovat konzistenci specifikace – rozpory a varování", "Check specification consistency – conflicts and warnings"),
+                (s, e) => ShowFindings(true)));
 
-            btnVratitAnalyzu = new ToolStripButton("↩ Revert Analysis")
+            btnVratitAnalyzu = new ToolStripButton(CodePlanner.Core.LocalizationService.T("↩ Vrátit analýzu", "↩ Revert Analysis"))
             {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
-                ToolTipText = "Restore the project from the backup created before the last AI analysis.",
+                ToolTipText = CodePlanner.Core.LocalizationService.T("Obnovit projekt ze zálohy vytvořené před poslední AI analýzou.", "Restore the project from the backup created before the last AI analysis."),
                 Padding = new Padding(4, 2, 4, 2),
                 Visible = false
             };
@@ -335,11 +362,19 @@ namespace CodePlanner
             tool.Items.Add(btnVratitAnalyzu);
 
             tool.Items.Add(new ToolStripSeparator());
-            tool.Items.Add(Tlacitko("⚙ AI Settings...", "Configure Gemini API key and model selection", (s, e) => OpenSettings()));
-            tool.Items.Add(Tlacitko("❓", "Help – how to proceed and keyboard shortcuts", (s, e) => ShowHelp()));
+            tool.Items.Add(Tlacitko(
+                CodePlanner.Core.LocalizationService.T("⚙ AI Nastavení...", "⚙ AI Settings..."),
+                CodePlanner.Core.LocalizationService.T("Konfigurace API klíče Gemini a výběr modelu", "Configure Gemini API key and model selection"),
+                (s, e) => OpenSettings()));
+            tool.Items.Add(Tlacitko("❓",
+                CodePlanner.Core.LocalizationService.T("Nápověda – jak postupovat a klávesové zkratky", "Help – how to proceed and keyboard shortcuts"),
+                (s, e) => ShowHelp()));
             tool.Items.Add(new ToolStripSeparator());
 
-            var tip2 = new ToolStripLabel("🎤 Dictation: hold button and talk · Win+H = built-in free Windows dictation")
+            var tip2 = new ToolStripLabel(CodePlanner.Core.LocalizationService.T(
+                "🎤 Diktování: držte tlačítko a mluvte · Win+H = integrované bezplatné diktování ve Windows",
+                "🎤 Dictation: hold button and talk · Win+H = built-in free Windows dictation"
+            ))
             {
                 ForeColor = SedaText
             };
@@ -537,13 +572,13 @@ namespace CodePlanner
             btnReferencie.Click += BtnReferences_Click;
 
             menuReferencie = new ContextMenuStrip();
-            menuReferencie.Items.Add("Show references...", null, (s, e) => ShowReferenceContent());
-            menuReferencie.Items.Add("Change references...", null, (s, e) => LoadReference());
-            menuReferencie.Items.Add("Remove references", null, (s, e) => RemoveReference());
+            menuReferencie.Items.Add(CodePlanner.Core.LocalizationService.T("Zobrazit podklady...", "Show references..."), null, (s, e) => ShowReferenceContent());
+            menuReferencie.Items.Add(CodePlanner.Core.LocalizationService.T("Změnit podklady...", "Change references..."), null, (s, e) => LoadReference());
+            menuReferencie.Items.Add(CodePlanner.Core.LocalizationService.T("Odstranit podklady", "Remove references"), null, (s, e) => RemoveReference());
 
             btnMockup = new Button
             {
-                Text = "🖼 Visual mockup (sketch)",
+                Text = CodePlanner.Core.LocalizationService.T("🖼 Vizuální mockup (náčrt)", "🖼 Visual mockup (sketch)"),
                 Height = 22,
                 Margin = new Padding(12, 2, 0, 0),
                 BackColor = Color.Gainsboro,
@@ -557,9 +592,9 @@ namespace CodePlanner
             btnMockup.Click += BtnMockup_Click;
 
             menuMockup = new ContextMenuStrip();
-            menuMockup.Items.Add("Show mockup...", null, (s, e) => ShowMockup());
-            menuMockup.Items.Add("Change mockup...", null, (s, e) => LoadMockup());
-            menuMockup.Items.Add("Remove mockup", null, (s, e) => RemoveMockup());
+            menuMockup.Items.Add(CodePlanner.Core.LocalizationService.T("Zobrazit mockup...", "Show mockup..."), null, (s, e) => ShowMockup());
+            menuMockup.Items.Add(CodePlanner.Core.LocalizationService.T("Změnit mockup...", "Change mockup..."), null, (s, e) => LoadMockup());
+            menuMockup.Items.Add(CodePlanner.Core.LocalizationService.T("Odstranit mockup", "Remove mockup"), null, (s, e) => RemoveMockup());
 
             pnlNapadHeader.Controls.Add(lblNapad);
             pnlNapadHeader.Controls.Add(btnAiAnalyza);
@@ -616,7 +651,7 @@ namespace CodePlanner
             };
 
             // TAB 1: Specifikace
-            var tabSpecPage = new TabPage("3 · 📄 Specification & Exports");
+            var tabSpecPage = new TabPage(CodePlanner.Core.LocalizationService.T("3 · 📄 Specifikace a exporty", "3 · 📄 Specification & Exports"));
             tabSpecPage.BackColor = Color.White;
             
             var pnlSpecHeader = new Panel
@@ -647,12 +682,12 @@ namespace CodePlanner
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = Color.Gray,
-                Text = "Search..."
+                Text = CodePlanner.Core.LocalizationService.T("Hledat...", "Search...")
             };
 
             txtHledat.Enter += (s, e) =>
             {
-                if (txtHledat.Text == "Search...")
+                if (txtHledat.Text == CodePlanner.Core.LocalizationService.T("Hledat...", "Search..."))
                 {
                     txtHledat.Text = "";
                     txtHledat.ForeColor = Color.Black;
@@ -663,14 +698,14 @@ namespace CodePlanner
             {
                 if (string.IsNullOrWhiteSpace(txtHledat.Text))
                 {
-                    txtHledat.Text = "Search...";
+                    txtHledat.Text = CodePlanner.Core.LocalizationService.T("Hledat...", "Search...");
                     txtHledat.ForeColor = Color.Gray;
                 }
             };
 
             txtHledat.TextChanged += (s, e) =>
             {
-                if (txtHledat.Text != "Search...")
+                if (txtHledat.Text != CodePlanner.Core.LocalizationService.T("Hledat...", "Search..."))
                 {
                     SearchText(txtHledat.Text);
                 }
@@ -713,7 +748,7 @@ namespace CodePlanner
             tabRight.TabPages.Add(tabSpecPage);
 
             // TAB 2: AI Asistent (Chat)
-            var tabChatPage = new TabPage("💬 AI Assistant (Chat)");
+            var tabChatPage = new TabPage(CodePlanner.Core.LocalizationService.T("💬 AI Asistent (Chat)", "💬 AI Assistant (Chat)"));
             tabChatPage.BackColor = Color.White;
             
             var tlpChat = new TableLayoutPanel
@@ -783,7 +818,7 @@ namespace CodePlanner
 
             btnSendChat = new Button
             {
-                Text = "Send",
+                Text = CodePlanner.Core.LocalizationService.T("Odeslat", "Send"),
                 Width = 75,
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
@@ -797,7 +832,7 @@ namespace CodePlanner
 
             btnClearChat = new Button
             {
-                Text = "Clear",
+                Text = CodePlanner.Core.LocalizationService.T("Vymazat", "Clear"),
                 Width = 65,
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
@@ -822,7 +857,7 @@ namespace CodePlanner
 
             var lblChatHint = new Label
             {
-                Text = "Enter = send · Shift+Enter = new line",
+                Text = CodePlanner.Core.LocalizationService.T("Enter = odeslat · Shift+Enter = nový řádek", "Enter = send · Shift+Enter = new line"),
                 AutoSize = true,
                 ForeColor = SedaText,
                 Font = new Font("Segoe UI", 8f),
@@ -1303,8 +1338,8 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(txtOdpoved.Text))
             {
-                MessageBox.Show(this, "Please write an answer, or select 'I don't know -> use assumption'.",
-                    "Missing Answer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Napište prosím odpověď, nebo zvolte 'Nevím -> použít předpoklad'.", "Please write an answer, or select 'I don't know -> use assumption'."),
+                    CodePlanner.Core.LocalizationService.T("Chybějící odpověď", "Missing Answer"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1634,8 +1669,8 @@ namespace CodePlanner
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 MessageBox.Show(this,
-                    "Gemini API key is not configured.\nPlease open AI Settings and enter your API key.",
-                    "Missing API Key", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    CodePlanner.Core.LocalizationService.T("API klíč pro Gemini není nakonfigurován.\nOtevřete prosím nastavení AI a zadejte svůj API klíč.", "Gemini API key is not configured.\nPlease open AI Settings and enter your API key."),
+                    CodePlanner.Core.LocalizationService.T("Chybějící API klíč", "Missing API Key"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 OpenSettings();
                 return;
             }
@@ -1644,8 +1679,8 @@ namespace CodePlanner
             if (string.IsNullOrWhiteSpace(napad))
             {
                 MessageBox.Show(this,
-                    "Please enter an idea first to analyze.",
-                    "Empty Idea", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    CodePlanner.Core.LocalizationService.T("Nejprve prosím zadejte nápad k analýze.", "Please enter an idea first to analyze."),
+                    CodePlanner.Core.LocalizationService.T("Prázdný nápad", "Empty Idea"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 txtNapad.Focus();
                 return;
             }
@@ -1653,10 +1688,15 @@ namespace CodePlanner
             if (_projekt.Answers.Count > 0 || _projekt.UserStories.Count > 0)
             {
                 var confirm = MessageBox.Show(this,
-                    "Analysis will overwrite existing answers (" + _projekt.Answers.Count + "), delete User Stories (" +
-                    _projekt.UserStories.Count + "), and clear metrics.\n" +
-                    "A backup will be created, which can be restored using the '↩ Revert Analysis' button.\n\nDo you want to proceed?",
-                    "Overwrite Specification?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    CodePlanner.Core.LocalizationService.T(
+                        "Analýza přepíše stávající odpovědi (" + _projekt.Answers.Count + "), smaže User Stories (" +
+                        _projekt.UserStories.Count + ") a vymaže metriky.\n" +
+                        "Bude vytvořena záloha, kterou lze obnovit tlačítkem '↩ Vrátit analýzu'.\n\nChcete pokračovat?",
+                        "Analysis will overwrite existing answers (" + _projekt.Answers.Count + "), delete User Stories (" +
+                        _projekt.UserStories.Count + "), and clear metrics.\n" +
+                        "A backup will be created, which can be restored using the '↩ Revert Analysis' button.\n\nDo you want to proceed?"
+                    ),
+                    CodePlanner.Core.LocalizationService.T("Přepsat specifikaci?", "Overwrite Specification?"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (confirm != DialogResult.Yes) return;
             }
 
@@ -1670,14 +1710,18 @@ namespace CodePlanner
             catch (Exception exZaloha)
             {
                 var pokracovat = MessageBox.Show(this,
-                    "Failed to create backup before analysis:\n\n" + exZaloha.Message +
-                    "\n\nDo you want to proceed anyway (without the ability to revert)?",
-                    "Backup Failed", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    CodePlanner.Core.LocalizationService.T(
+                        "Nepodařilo se vytvořit zálohu před analýzou:\n\n" + exZaloha.Message +
+                        "\n\nChcete přesto pokračovat (bez možnosti vrácení zpět)?",
+                        "Failed to create backup before analysis:\n\n" + exZaloha.Message +
+                        "\n\nDo you want to proceed anyway (without the ability to revert)?"
+                    ),
+                    CodePlanner.Core.LocalizationService.T("Zálohování selhalo", "Backup Failed"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (pokracovat != DialogResult.Yes) return;
             }
 
-            string stavPoDokonceni = "Ready.";
-            SetBusyState(true, "Communicating with Gemini API...");
+            string stavPoDokonceni = CodePlanner.Core.LocalizationService.T("Připraven.", "Ready.");
+            SetBusyState(true, CodePlanner.Core.LocalizationService.T("Komunikuji s Gemini API...", "Communicating with Gemini API..."));
             _ctsAi = new CancellationTokenSource();
             var startujiciProjekt = _projekt;
 
@@ -1760,8 +1804,8 @@ namespace CodePlanner
                 _projekt.ChangeLog.Add(new DecisionLogEntry
                 {
                     Timestamp = DateTime.Now,
-                    Action = "AI Analysis",
-                    Detail = $"Specification generated using Gemini API (model: {model})."
+                    Action = CodePlanner.Core.LocalizationService.T("AI Analýza", "AI Analysis"),
+                    Detail = CodePlanner.Core.LocalizationService.T($"Specifikace vygenerována pomocí Gemini API (model: {model}).", $"Specification generated using Gemini API (model: {model}).")
                 });
 
                 MarkChanged();
@@ -1769,18 +1813,18 @@ namespace CodePlanner
                 SelectQuestion(SpecificationService.GetNextUnansweredQuestion(_projekt));
 
                 // úspěch bez vyskakovacího okna – stačí stavový řádek (viz UX bod „méně modálů“)
-                stavPoDokonceni = "✅ Analysis completed – review questions and answers (step 2). You can revert using 'Revert Analysis'.";
+                stavPoDokonceni = CodePlanner.Core.LocalizationService.T("✅ Analýza dokončena – zkontrolujte otázky a odpovědi (krok 2). Můžete ji vrátit zpět tlačítkem 'Vrátit analýzu'.", "✅ Analysis completed – review questions and answers (step 2). You can revert using 'Revert Analysis'.");
             }
             catch (Exception ex)
             {
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    stavPoDokonceni = "Analysis cancelled – project remains unchanged.";
+                    stavPoDokonceni = CodePlanner.Core.LocalizationService.T("Analýza zrušena – projekt zůstal nezměněn.", "Analysis cancelled – project remains unchanged.");
                     return;
                 }
-                MessageBox.Show(this, $"An error occurred during idea analysis:\n\n{ex.Message}",
-                    "AI Analysis Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                stavPoDokonceni = "Analysis failed – project remains unchanged.";
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T($"Během analýzy nápadu došlo k chybě:\n\n{ex.Message}", $"An error occurred during idea analysis:\n\n{ex.Message}"),
+                    CodePlanner.Core.LocalizationService.T("Chyba AI analýzy", "AI Analysis Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                stavPoDokonceni = CodePlanner.Core.LocalizationService.T("Analýza selhala – projekt zůstal nezměněn.", "Analysis failed – project remains unchanged.");
             }
             finally
             {
@@ -1848,8 +1892,8 @@ namespace CodePlanner
             if (string.IsNullOrWhiteSpace(nastaveni.EffectiveApiKey))
             {
                 MessageBox.Show(this,
-                    "Gemini API key is not configured.\nPlease configure your API key in AI Settings for dictation.",
-                    "Missing API Key", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    CodePlanner.Core.LocalizationService.T("API klíč pro Gemini není nakonfigurován.\nNakonfigurujte prosím svůj API klíč v nastavení AI pro diktování.", "Gemini API key is not configured.\nPlease configure your API key in AI Settings for dictation."),
+                    CodePlanner.Core.LocalizationService.T("Chybějící API klíč", "Missing API Key"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 OpenSettings();
                 return;
             }
@@ -1864,14 +1908,14 @@ namespace CodePlanner
                 _diktovaniLimitTimer.Start();   // pojistka: auto-stop po 3 minutách
                 b.BackColor = Color.Crimson;
                 b.ForeColor = Color.White;
-                b.Text = "🎤 Recording...";
-                SetStatus("Dictation started. Hold the button, or click again to stop (3 min limit).");
+                b.Text = CodePlanner.Core.LocalizationService.T("🎤 Nahrávání...", "🎤 Recording...");
+                SetStatus(CodePlanner.Core.LocalizationService.T("Diktování spuštěno. Držte tlačítko nebo na něj znovu klikněte pro zastavení (limit 3 min).", "Dictation started. Hold the button, or click again to stop (3 min limit)."));
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this,
-                    "Failed to start recording from microphone:\n\n" + ex.Message + "\n\n" + RadaMikrofon,
-                    "Recording Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CodePlanner.Core.LocalizationService.T("Nepodařilo se spustit nahrávání z mikrofonu:\n\n", "Failed to start recording from microphone:\n\n") + ex.Message + "\n\n" + RadaMikrofon,
+                    CodePlanner.Core.LocalizationService.T("Chyba nahrávání", "Recording Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1896,8 +1940,8 @@ namespace CodePlanner
             {
                 // stisk byl příliš rychlý -> přepneme do režimu klikni-a-mluv
                 _diktovaniClickToggle = true;
-                b.Text = "🎤 Recording (click to stop)";
-                SetStatus("Click-to-talk mode activated. Recording… Click the button again to finish (3 min limit).");
+                b.Text = CodePlanner.Core.LocalizationService.T("🎤 Nahrávání (kliknutím zastavíte)", "🎤 Recording (click to stop)");
+                SetStatus(CodePlanner.Core.LocalizationService.T("Aktivován režim klikni-a-mluv. Nahrávám... Pro ukončení klikněte na tlačítko znovu (limit 3 min).", "Click-to-talk mode activated. Recording… Click the button again to finish (3 min limit)."));
             }
             else
             {
@@ -1916,7 +1960,7 @@ namespace CodePlanner
             _diktovaniLimitTimer.Stop();
             _tlacitkoDiktovaniAktivni = null;
 
-            SetStatus("Stopping recording...");
+            SetStatus(CodePlanner.Core.LocalizationService.T("Zastavuji nahrávání...", "Stopping recording..."));
             string? cestaWav = VoiceRecorder.StopRecording();
 
             // obnovíme výchozí vzhled tlačítka
@@ -1924,18 +1968,18 @@ namespace CodePlanner
             {
                 b.BackColor = Color.Gainsboro;
                 b.ForeColor = Navy;
-                b.Text = "🎤 Dictate";
+                b.Text = CodePlanner.Core.LocalizationService.T("🎤 Diktovat", "🎤 Dictate");
             }
             else
             {
                 b.BackColor = Color.White;
                 b.ForeColor = Navy;
-                b.Text = "🎤 Dictate";
+                b.Text = CodePlanner.Core.LocalizationService.T("🎤 Diktovat", "🎤 Dictate");
             }
 
             if (string.IsNullOrEmpty(cestaWav))
             {
-                SetStatus("Dictation cancelled, or could not save recording. " + RadaMikrofon);
+                SetStatus(CodePlanner.Core.LocalizationService.T("Diktování zrušeno, nebo se nepodařilo uložit nahrávku. ", "Dictation cancelled, or could not save recording. ") + RadaMikrofon);
                 return;
             }
 
@@ -1954,15 +1998,15 @@ namespace CodePlanner
 
             if (delkaSekund < 0.4)
             {
-                SetStatus("Recording was too short.");
+                SetStatus(CodePlanner.Core.LocalizationService.T("Nahrávka byla příliš krátká.", "Recording was too short."));
                 try { if (File.Exists(cestaWav)) File.Delete(cestaWav); } catch { }
                 return;
             }
 
             TextBox cil = b == btnDiktovatNapad ? txtNapad : txtOdpoved;
             b.Enabled = false;
-            b.Text = "⏳ Transcribing...";
-            SetStatus("Communicating with Gemini API (transcribing)...");
+            b.Text = CodePlanner.Core.LocalizationService.T("⏳ Přepisuji...", "⏳ Transcribing...");
+            SetStatus(CodePlanner.Core.LocalizationService.T("Komunikuji s Gemini API (přepisuji)...", "Communicating with Gemini API (transcribing)..."));
 
             _transcribing = true;
             _ctsTranscribe = new CancellationTokenSource();
@@ -1983,16 +2027,16 @@ namespace CodePlanner
                 if (string.IsNullOrWhiteSpace(prepis))
                 {
                     MessageBox.Show(this,
-                        "No speech was recognized from the recording.\n\n" + RadaMikrofon,
-                        "Empty Transcription", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    SetStatus("Transcription returned no text.");
+                        CodePlanner.Core.LocalizationService.T("V nahrávce nebylo rozpoznáno žádné slovo.\n\n", "No speech was recognized from the recording.\n\n") + RadaMikrofon,
+                        CodePlanner.Core.LocalizationService.T("Prázdný přepis", "Empty Transcription"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    SetStatus(CodePlanner.Core.LocalizationService.T("Přepis nevrátil žádný text.", "Transcription returned no text."));
                 }
                 else
                 {
                     InsertTextAtCursor(cil, prepis);
                     SetStatus(autoStop
-                        ? "⏱ Recording was automatically stopped after 3 minutes and speech transcribed."
-                        : "Speech successfully transcribed.");
+                        ? CodePlanner.Core.LocalizationService.T("⏱ Nahrávání bylo po 3 minutách automaticky zastaveno a řeč byla přepsána.", "⏱ Recording was automatically stopped after 3 minutes and speech transcribed.")
+                        : CodePlanner.Core.LocalizationService.T("Řeč byla úspěšně přepsána.", "Speech successfully transcribed."));
                 }
             }
             catch (Exception ex)
@@ -2001,12 +2045,12 @@ namespace CodePlanner
                 if (startujiciProjekt != _projekt) return; // projekt přepnut, ignorujeme chybu
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    SetStatus("Transcription cancelled.");
+                    SetStatus(CodePlanner.Core.LocalizationService.T("Přepis zrušen.", "Transcription cancelled."));
                     return;
                 }
-                MessageBox.Show(this, "An error occurred during audio transcription:\n\n" + ex.Message,
-                    "Transcription Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                SetStatus("Error during transcription.");
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Během přepisu audia došlo k chybě:\n\n", "An error occurred during audio transcription:\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba přepisu", "Transcription Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SetStatus(CodePlanner.Core.LocalizationService.T("Chyba během přepisu.", "Error during transcription."));
             }
             finally
             {
@@ -2165,7 +2209,7 @@ namespace CodePlanner
             RenderChatHistory();
 
             Cursor = Cursors.WaitCursor;
-            SetStatus("AI Assistant is replying...");
+            SetStatus(CodePlanner.Core.LocalizationService.T("AI asistent odpovídá...", "AI Assistant is replying..."));
             _casStartuAiOperace = DateTime.Now;
             _prubehTimer.Start();
             _ctsChat = new CancellationTokenSource();
@@ -2182,7 +2226,7 @@ namespace CodePlanner
                 _projekt.ChatHistory.Add(modelZprava);
                 MarkChanged();
                 RenderChatHistory();
-                SetStatus("AI Assistant replied.");
+                SetStatus(CodePlanner.Core.LocalizationService.T("AI asistent odpověděl.", "AI Assistant replied."));
             }
             catch (Exception ex)
             {
@@ -2201,12 +2245,12 @@ namespace CodePlanner
                 bool zruseno = ex is OperationCanceledException || ex.InnerException is OperationCanceledException;
                 if (zruseno)
                 {
-                    SetStatus("Message sending cancelled – text remains in input field.");
+                    SetStatus(CodePlanner.Core.LocalizationService.T("Odesílání zprávy zrušeno – text zůstal ve vstupním poli.", "Message sending cancelled – text remains in input field."));
                 }
                 else
                 {
-                    MessageBox.Show(this, "Error communicating with AI Assistant:\n\n" + ex.Message, "AI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    SetStatus("Communication failed.");
+                    MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Chyba při komunikaci s AI asistentem:\n\n", "Error communicating with AI Assistant:\n\n") + ex.Message, CodePlanner.Core.LocalizationService.T("Chyba AI", "AI Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    SetStatus(CodePlanner.Core.LocalizationService.T("Komunikace selhala.", "Communication failed."));
                 }
             }
             finally
@@ -2219,7 +2263,7 @@ namespace CodePlanner
                 if (!this.IsDisposed && this.Created)
                 {
                     txtChatInput.Enabled = true;
-                    btnSendChat.Text = "Send";
+                    btnSendChat.Text = CodePlanner.Core.LocalizationService.T("Odeslat", "Send");
                     btnSendChat.Enabled = true;
                     btnClearChat.Enabled = true;
                     Cursor = Cursors.Default;
@@ -2232,13 +2276,15 @@ namespace CodePlanner
         {
             if (_projekt.ChatHistory == null || _projekt.ChatHistory.Count == 0) return;
 
-            var confirm = MessageBox.Show(this, "Are you sure you want to clear the entire assistant chat history?", "Clear Chat", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var confirm = MessageBox.Show(this,
+                CodePlanner.Core.LocalizationService.T("Opravdu chcete vymazat celou historii chatu s asistentem?", "Are you sure you want to clear the entire assistant chat history?"),
+                CodePlanner.Core.LocalizationService.T("Vymazat chat", "Clear Chat"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm == DialogResult.Yes)
             {
                 _projekt.ChatHistory.Clear();
                 MarkChanged();
                 RenderChatHistory();
-                SetStatus("Chat history cleared.");
+                SetStatus(CodePlanner.Core.LocalizationService.T("Historie chatu vymazána.", "Chat history cleared."));
             }
         }
 
@@ -2287,8 +2333,11 @@ namespace CodePlanner
 
                 DateTime cas = File.GetLastWriteTime(CestaAutosave);
                 var res = MessageBox.Show(this,
-                    $"An autosave of unsaved work was found (from {cas:HH:mm}). Do you want to restore it?",
-                    "Restore Autosave", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    CodePlanner.Core.LocalizationService.T(
+                        $"Byla nalezena automatická záloha neuložené práce (z {cas:HH:mm}). Chcete ji obnovit?",
+                        $"An autosave of unsaved work was found (from {cas:HH:mm}). Do you want to restore it?"
+                    ),
+                    CodePlanner.Core.LocalizationService.T("Obnovit automatickou zálohu", "Restore Autosave"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (res == DialogResult.Yes)
                 {
@@ -2303,8 +2352,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to load the autosave file.\n\n" + ex.Message,
-                    "Recovery Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Nepodařilo se načíst soubor automatické zálohy.\n\n", "Failed to load the autosave file.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba obnovy", "Recovery Error"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DeleteAutosave();
             }
         }
@@ -2337,8 +2386,11 @@ namespace CodePlanner
             }
 
             var res = MessageBox.Show(this,
-                "The project will revert to the state before the last AI analysis. The current questions and answers will be replaced.\n\nDo you want to proceed?",
-                "Revert Analysis", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                CodePlanner.Core.LocalizationService.T(
+                    "Projekt bude vrácen do stavu před poslední AI analýzou. Aktuální otázky a odpovědi budou nahrazeny.\n\nChcete pokračovat?",
+                    "The project will revert to the state before the last AI analysis. The current questions and answers will be replaced.\n\nDo you want to proceed?"
+                ),
+                CodePlanner.Core.LocalizationService.T("Vrátit analýzu", "Revert Analysis"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (res != DialogResult.Yes) return;
 
             try
@@ -2350,8 +2402,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to load backup.\n\n" + ex.Message,
-                    "Recovery Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Nepodařilo se načíst zálohu.\n\n", "Failed to load backup.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba obnovy", "Recovery Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -2377,8 +2429,8 @@ namespace CodePlanner
             bool zafixovan = _projekt?.Questions != null && _projekt.Questions.Count > 0;
             cmbTyp.Enabled = !zafixovan && !_isBusy;
             _tipReference?.SetToolTip(cmbTyp, zafixovan
-                ? "The project type is fixed by AI analysis – a new analysis can change it."
-                : "Template for guided questions based on project type.");
+                ? CodePlanner.Core.LocalizationService.T("Typ projektu je pevně dán AI analýzou – nová analýza jej může změnit.", "The project type is fixed by AI analysis – a new analysis can change it.")
+                : CodePlanner.Core.LocalizationService.T("Šablona pro vedené otázky na základě typu projektu.", "Template for guided questions based on project type."));
         }
 
         /// <summary>Před exportem shrne, co ve specifikaci ještě chybí nebo je zastaralé. Vrací true = exportovat.</summary>
@@ -2401,8 +2453,11 @@ namespace CodePlanner
             else if (storiesStare) casti.Add("user stories are outdated");
 
             var res = MessageBox.Show(this,
-                "The specification is not complete yet:\n\n• " + string.Join("\n• ", casti) + "\n\nDo you want to export anyway?",
-                "Export Summary Check", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                CodePlanner.Core.LocalizationService.T(
+                    "Specifikace ještě není kompletní:\n\n• " + string.Join("\n• ", casti) + "\n\nChcete ji přesto exportovat?",
+                    "The specification is not complete yet:\n\n• " + string.Join("\n• ", casti) + "\n\nDo you want to export anyway?"
+                ),
+                CodePlanner.Core.LocalizationService.T("Kontrola stavu před exportem", "Export Summary Check"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             return res == DialogResult.Yes;
         }
 
@@ -2410,24 +2465,44 @@ namespace CodePlanner
         private void ShowHelp()
         {
             MessageBox.Show(this,
-                "HOW TO PROCEED (4 steps):\n" +
-                "1. Describe your idea in your own words (or use voice dictation).\n" +
-                "2. Let AI prepare customized questions (🤖 Analyze), or start answering predefined template questions.\n" +
-                "3. Answer the questions – if you don't know, use assumptions.\n" +
-                "4. Export the completed specification: Markdown for humans, JSON for AI agents, PDF or HTML for clients.\n\n" +
-                "KEYBOARD SHORTCUTS:\n" +
-                "Ctrl+N – new project\n" +
-                "Ctrl+O – open project\n" +
-                "Ctrl+S – save project (works even during AI processing)\n" +
-                "Ctrl+M – export Markdown\n" +
-                "Ctrl+J – export JSON\n" +
-                "Ctrl+P – export PDF\n" +
-                "Ctrl+Enter – save answer for selected question\n" +
-                "Esc – cancel running AI operation\n\n" +
-                "QUESTION LIST ICONS:\n" +
-                "✔ answered · ≈ assumption · ○ unanswered\n" +
-                "Red accent bar indicates high impact question.",
-                "Help", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CodePlanner.Core.LocalizationService.T(
+                    "JAK POSTUPOVAT (4 kroky):\n" +
+                    "1. Popište svůj nápad vlastními slovy (nebo použijte diktování hlasem).\n" +
+                    "2. Nechte AI připravit otázky na míru (🤖 Analyzovat), nebo začněte odpovídat na předdefinované šablony.\n" +
+                    "3. Odpovězte na otázky – pokud nevíte, použijte předpoklady.\n" +
+                    "4. Exportujte hotovou specifikaci: Markdown pro lidi, JSON pro AI agenty, PDF či HTML pro klienty.\n\n" +
+                    "KLÁVESOVÉ ZKRATKY:\n" +
+                    "Ctrl+N – nový projekt\n" +
+                    "Ctrl+O – otevřít projekt\n" +
+                    "Ctrl+S – uložit projekt (funguje i během běhu AI analýzy)\n" +
+                    "Ctrl+M – exportovat do Markdownu\n" +
+                    "Ctrl+J – exportovat do JSONu\n" +
+                    "Ctrl+P – exportovat do PDF\n" +
+                    "Ctrl+Enter – uložit odpověď na zvolenou otázku\n" +
+                    "Esc – zrušit běžící AI operaci\n\n" +
+                    "IKONY V SEZNAMU OTÁZEK:\n" +
+                    "✔ zodpovězeno · ≈ předpoklad · ○ nezodpovězeno\n" +
+                    "Červený pruh označuje otázku s vysokým dopadem.",
+
+                    "HOW TO PROCEED (4 steps):\n" +
+                    "1. Describe your idea in your own words (or use voice dictation).\n" +
+                    "2. Let AI prepare customized questions (🤖 Analyze), or start answering predefined template questions.\n" +
+                    "3. Answer the questions – if you don't know, use assumptions.\n" +
+                    "4. Export the completed specification: Markdown for humans, JSON for AI agents, PDF or HTML for clients.\n\n" +
+                    "KEYBOARD SHORTCUTS:\n" +
+                    "Ctrl+N – new project\n" +
+                    "Ctrl+O – open project\n" +
+                    "Ctrl+S – save project (works even during AI processing)\n" +
+                    "Ctrl+M – export Markdown\n" +
+                    "Ctrl+J – export JSON\n" +
+                    "Ctrl+P – export PDF\n" +
+                    "Ctrl+Enter – save answer for selected question\n" +
+                    "Esc – cancel running AI operation\n\n" +
+                    "QUESTION LIST ICONS:\n" +
+                    "✔ answered · ≈ assumption · ○ unanswered\n" +
+                    "Red accent bar indicates high impact question."
+                ),
+                CodePlanner.Core.LocalizationService.T("Nápověda", "Help"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>Každou sekundu ukazuje, jak dlouho už AI operace běží, a připomíná možnost zrušení.</summary>
@@ -2439,7 +2514,7 @@ namespace CodePlanner
                 return;
             }
             int sekundy = (int)(DateTime.Now - _casStartuAiOperace).TotalSeconds;
-            SetStatus("⏳ Communicating with AI… (" + sekundy + "s) – Esc to cancel");
+            SetStatus(CodePlanner.Core.LocalizationService.T("⏳ Komunikuji s AI... (" + sekundy + "s) – stiskněte Esc pro zrušení", "⏳ Communicating with AI… (" + sekundy + "s) – Esc to cancel"));
         }
 
         /// <summary>Pojistka diktování: po 3 minutách nahrávání automaticky zastaví a odešle k přepisu.</summary>
@@ -2450,7 +2525,7 @@ namespace CodePlanner
             if (b == null) return;
 
             _diktovaniClickToggle = false;
-            SetStatus("⏱ Recording reached the 3 minute limit – automatically stopping and transcribing.");
+            SetStatus(CodePlanner.Core.LocalizationService.T("⏱ Nahrávání dosáhlo limitu 3 minut – automaticky se zastavuje a přepisuje.", "⏱ Recording reached the 3 minute limit – automatically stopping and transcribing."));
             StopAndDictate(b, autoStop: true);
         }
     }

@@ -35,7 +35,7 @@ namespace CodePlanner
             _project = project;
             _onZmena = onZmena;
 
-            Text = "Project Metrics & Estimates";
+            Text = LocalizationService.T("Metriky a odhady projektu", "Project Metrics & Estimates");
             Size = new Size(820, 580);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -71,7 +71,7 @@ namespace CodePlanner
             };
             var lblTitle = new Label
             {
-                Text = "📊 AI Estimate & Project Metrics",
+                Text = LocalizationService.T("📊 AI Odhad a Metriky Projektu", "📊 AI Estimate & Project Metrics"),
                 ForeColor = Color.White,
                 Font = DesignSystem.HeaderMedium,
                 Dock = DockStyle.Left,
@@ -141,10 +141,10 @@ namespace CodePlanner
                 return card;
             }
 
-            pnlLeft.Controls.Add(CreateCard("ESTIMATED DEVELOPMENT TIME", out lblCasOdhaduVal), 0, 0);
-            pnlLeft.Controls.Add(CreateCard("PROJECT COMPLEXITY", out lblKomplexitaVal), 0, 1);
-            pnlLeft.Controls.Add(CreateCard("RECOMMENDED BUDGET", out lblRozpocetVal), 0, 2);
-            pnlLeft.Controls.Add(CreateCard("TEAM COMPOSITION", out lblSlozeniVal), 0, 3);
+            pnlLeft.Controls.Add(CreateCard(LocalizationService.T("ODHADOVANÁ DOBA VÝVOJE", "ESTIMATED DEVELOPMENT TIME"), out lblCasOdhaduVal), 0, 0);
+            pnlLeft.Controls.Add(CreateCard(LocalizationService.T("KOMPLEXITA PROJEKTU", "PROJECT COMPLEXITY"), out lblKomplexitaVal), 0, 1);
+            pnlLeft.Controls.Add(CreateCard(LocalizationService.T("DOPORUČENÝ ROZPOČET", "RECOMMENDED BUDGET"), out lblRozpocetVal), 0, 2);
+            pnlLeft.Controls.Add(CreateCard(LocalizationService.T("SLOŽENÍ TÝMU", "TEAM COMPOSITION"), out lblSlozeniVal), 0, 3);
 
             split.Panel1.Controls.Add(pnlLeft);
 
@@ -155,7 +155,7 @@ namespace CodePlanner
                 Font = DesignSystem.Body
             };
 
-            var tabRozbor = new TabPage("🔧 Technical Breakdown & Architecture");
+            var tabRozbor = new TabPage(LocalizationService.T("🔧 Technický rozbor a architektura", "🔧 Technical Breakdown & Architecture"));
             rtbRozbor = new RichTextBox
             {
                 Dock = DockStyle.Fill,
@@ -167,7 +167,7 @@ namespace CodePlanner
             };
             tabRozbor.Controls.Add(rtbRozbor);
 
-            var tabRizika = new TabPage("⚠ Estimated Project Risks");
+            var tabRizika = new TabPage(LocalizationService.T("⚠ Odhadovaná rizika projektu", "⚠ Estimated Project Risks"));
             rtbRizika = new RichTextBox
             {
                 Dock = DockStyle.Fill,
@@ -203,7 +203,7 @@ namespace CodePlanner
 
             btnAiMetriky = new Button
             {
-                Text = "🤖 Calculate Estimate via AI",
+                Text = LocalizationService.T("🤖 Spočítat odhad přes AI", "🤖 Calculate Estimate via AI"),
                 Width = 200,
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
@@ -217,7 +217,7 @@ namespace CodePlanner
 
             btnCopy = new Button
             {
-                Text = "📋 Copy text",
+                Text = LocalizationService.T("📋 Kopírovat text", "📋 Copy text"),
                 Width = 140,
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
@@ -241,7 +241,7 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                btnAiMetriky.Text = "🔑 Configure API Key";
+                btnAiMetriky.Text = LocalizationService.T("🔑 Konfigurovat API klíč", "🔑 Configure API Key");
             }
 
             NaplnMetriky();
@@ -256,19 +256,19 @@ namespace CodePlanner
         {
             if (_metrics == null || _metrics.CalculationTimestamp == default)
             {
-                lblCasOdhaduVal.Text = "Zatím nespočítáno";
-                lblKomplexitaVal.Text = "Zatím nespočítáno";
-                lblRozpocetVal.Text = "Zatím nespočítáno";
-                lblSlozeniVal.Text = "Zatím nespočítáno";
-                rtbRozbor.Text = "Klikněte na tlačítko 'Spočítat odhad přes AI' pro asynchronní analýzu specifikace a backlogu pomocí Gemini API.";
-                rtbRizika.Text = "Seznam rizik bude vygenerován spolu s odhadem.";
-                lblStatus.Text = "Odhad dosud nebyl vygenerován.";
+                lblCasOdhaduVal.Text = LocalizationService.T("Zatím nespočítáno", "Not calculated yet");
+                lblKomplexitaVal.Text = LocalizationService.T("Zatím nespočítáno", "Not calculated yet");
+                lblRozpocetVal.Text = LocalizationService.T("Zatím nespočítáno", "Not calculated yet");
+                lblSlozeniVal.Text = LocalizationService.T("Zatím nespočítáno", "Not calculated yet");
+                rtbRozbor.Text = LocalizationService.T("Klikněte na tlačítko 'Spočítat odhad přes AI' pro asynchronní analýzu specifikace a backlogu pomocí Gemini API.", "Click the 'Calculate Estimate via AI' button to perform an asynchronous analysis of the specification and backlog using the Gemini API.");
+                rtbRizika.Text = LocalizationService.T("Seznam rizik bude vygenerován spolu s odhadem.", "The list of risks will be generated along with the estimate.");
+                lblStatus.Text = LocalizationService.T("Odhad dosud nebyl vygenerován.", "No estimate has been generated yet.");
                 btnCopy.Enabled = false;
                 return;
             }
 
             btnCopy.Enabled = true;
-            lblCasOdhaduVal.Text = $"{_metrics.TimeEstimateMin} to {_metrics.TimeEstimateMax}";
+            lblCasOdhaduVal.Text = LocalizationService.T($"{_metrics.TimeEstimateMin} až {_metrics.TimeEstimateMax}", $"{_metrics.TimeEstimateMin} to {_metrics.TimeEstimateMax}");
             lblKomplexitaVal.Text = _metrics.Complexity;
             
             // Barevné odlišení komplexity
@@ -294,10 +294,10 @@ namespace CodePlanner
             }
             else
             {
-                rtbRizika.Text = "No specific threats or risks defined yet.";
+                rtbRizika.Text = LocalizationService.T("Zatím nebyla definována žádná konkrétní rizika.", "No specific threats or risks defined yet.");
             }
 
-            lblStatus.Text = $"Estimate updated: {_metrics.CalculationTimestamp:yyyy-MM-dd H:mm}";
+            lblStatus.Text = LocalizationService.T($"Odhad aktualizován: {_metrics.CalculationTimestamp:yyyy-MM-dd H:mm}", $"Estimate updated: {_metrics.CalculationTimestamp:yyyy-MM-dd H:mm}");
         }
 
         private async void BtnAiMetriky_Click(object? sender, EventArgs e)
@@ -313,7 +313,7 @@ namespace CodePlanner
                         _model = nast.GeminiModel;
                         if (!string.IsNullOrWhiteSpace(_apiKey))
                         {
-                            btnAiMetriky.Text = "🤖 Calculate Estimate via AI";
+                            btnAiMetriky.Text = LocalizationService.T("🤖 Spočítat odhad přes AI", "🤖 Calculate Estimate via AI");
                         }
                     }
                 }
@@ -327,9 +327,9 @@ namespace CodePlanner
             }
 
             Cursor = Cursors.WaitCursor;
-            btnAiMetriky.Text = "❌ Cancel Estimate";
+            btnAiMetriky.Text = LocalizationService.T("❌ Zrušit odhad", "❌ Cancel Estimate");
             btnAiMetriky.Enabled = true;
-            lblStatus.Text = "Calculating estimate using Gemini API...";
+            lblStatus.Text = LocalizationService.T("Počítám odhad pomocí Gemini API...", "Calculating estimate using Gemini API...");
             _cts = new CancellationTokenSource();
 
             try
@@ -349,24 +349,24 @@ namespace CodePlanner
                 _project.ChangeLog.Add(new DecisionLogEntry
                 {
                     Timestamp = DateTime.Now,
-                    Action = "Project Metrics",
-                    Detail = $"AI effort estimate: {_metrics.TimeEstimateMin} to {_metrics.TimeEstimateMax} (complexity: {_metrics.Complexity})."
+                    Action = LocalizationService.T("Metriky projektu", "Project Metrics"),
+                    Detail = LocalizationService.T($"AI odhad pracnosti: {_metrics.TimeEstimateMin} až {_metrics.TimeEstimateMax} (komplexita: {_metrics.Complexity}).", $"AI effort estimate: {_metrics.TimeEstimateMin} to {_metrics.TimeEstimateMax} (complexity: {_metrics.Complexity}).")
                 });
 
                 _onZmena();
                 NaplnMetriky();
-                MessageBox.Show(this, "AI analysis and project estimate completed successfully.", "Estimate Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, LocalizationService.T("AI analýza a odhad projektu byly úspěšně dokončeny.", "AI analysis and project estimate completed successfully."), LocalizationService.T("Odhad dokončen", "Estimate Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 if (this.IsDisposed || !this.Created) return;
                 if (ex is OperationCanceledException || ex.InnerException is OperationCanceledException)
                 {
-                    lblStatus.Text = "Calculation cancelled by user.";
+                    lblStatus.Text = LocalizationService.T("Výpočet zrušen uživatelem.", "Calculation cancelled by user.");
                     return;
                 }
-                MessageBox.Show(this, "Estimate calculation failed:\n\n" + ex.Message, "AI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                lblStatus.Text = "Calculation failed.";
+                MessageBox.Show(this, LocalizationService.T("Výpočet odhadu selhal:\n\n", "Estimate calculation failed:\n\n") + ex.Message, LocalizationService.T("Chyba AI", "AI Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = LocalizationService.T("Výpočet selhal.", "Calculation failed.");
             }
             finally
             {
@@ -375,7 +375,7 @@ namespace CodePlanner
                 if (!this.IsDisposed && this.Created)
                 {
                     btnAiMetriky.Enabled = true;
-                    btnAiMetriky.Text = "🤖 Calculate Estimate via AI";
+                    btnAiMetriky.Text = LocalizationService.T("🤖 Spočítat odhad přes AI", "🤖 Calculate Estimate via AI");
                     Cursor = Cursors.Default;
                 }
             }
@@ -385,17 +385,17 @@ namespace CodePlanner
         private void BtnCopy_Click(object? sender, EventArgs e)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("=== PROJECT METRICS AND ESTIMATE ===");
-            sb.AppendLine($"Project: {_project.Name}");
-            sb.AppendLine($"Time estimate: {_metrics.TimeEstimateMin} to {_metrics.TimeEstimateMax}");
-            sb.AppendLine($"Complexity: {_metrics.Complexity}");
-            sb.AppendLine($"Recommended budget: {_metrics.RecommendedBudget}");
-            sb.AppendLine($"Recommended team composition: {_metrics.TeamComposition}");
+            sb.AppendLine(LocalizationService.T("=== METRIKY A ODHAD PROJEKTU ===", "=== PROJECT METRICS AND ESTIMATE ==="));
+            sb.AppendLine(LocalizationService.T("Projekt: ", "Project: ") + _project.Name);
+            sb.AppendLine(LocalizationService.T("Odhadovaný čas: ", "Time estimate: ") + $"{_metrics.TimeEstimateMin} " + LocalizationService.T("až", "to") + $" {_metrics.TimeEstimateMax}");
+            sb.AppendLine(LocalizationService.T("Komplexita: ", "Complexity: ") + _metrics.Complexity);
+            sb.AppendLine(LocalizationService.T("Doporučený rozpočet: ", "Recommended budget: ") + _metrics.RecommendedBudget);
+            sb.AppendLine(LocalizationService.T("Doporučené složení týmu: ", "Recommended team composition: ") + _metrics.TeamComposition);
             sb.AppendLine();
-            sb.AppendLine("--- Technical analysis ---");
+            sb.AppendLine(LocalizationService.T("--- Technický rozbor ---", "--- Technical analysis ---"));
             sb.AppendLine(_metrics.TechnicalAnalysis);
             sb.AppendLine();
-            sb.AppendLine("--- Estimated risks ---");
+            sb.AppendLine(LocalizationService.T("--- Odhadovaná rizika ---", "--- Estimated risks ---"));
             foreach (var r in _metrics.MetricRisks)
             {
                 sb.AppendLine($"- {r}");
@@ -404,11 +404,11 @@ namespace CodePlanner
             try
             {
                 Clipboard.SetText(sb.ToString());
-                MessageBox.Show(this, "The complete estimate text has been copied to the clipboard.", "Copied", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, LocalizationService.T("Kompletní text odhadu byl zkopírován do schránky.", "The complete estimate text has been copied to the clipboard."), LocalizationService.T("Kopírováno", "Copied"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to copy to clipboard:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, LocalizationService.T("Kopírování do schránky selhalo:\n\n", "Failed to copy to clipboard:\n\n") + ex.Message, LocalizationService.T("Chyba", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

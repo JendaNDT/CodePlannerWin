@@ -22,6 +22,7 @@ namespace CodePlanner.Core
     {
         public string GeminiApiKey { get; set; } = "";
         public string GeminiModel { get; set; } = "gemini-2.5-flash";
+        public string Language { get; set; } = "cs";
         public List<string> RecentProjects { get; set; } = new List<string>();
 
         public void AddRecentProject(string cesta)

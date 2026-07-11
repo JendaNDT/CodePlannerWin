@@ -1,12 +1,12 @@
 # CodePlanner – Project Status
-*Naposled aktualizováno: 11. 7. 2026 (v2.2.0)*
+*Naposled aktualizováno: 11. 7. 2026 (v2.2.0 – Finální lokalizace)*
 
 ## 🎯 Co to je
 Windows .exe demonstrátor projektu CodePlanner AI (dle PDF návrhu, kap. 18): z volně popsaného nápadu vytvoří řízenými otázkami verzovanou specifikaci s exportem pro kódovacího agenta.
 Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilováno ze sandboxu přes EnableWindowsTargeting.
 
 ## ⏭️ Příští krok
-**Jenda otestuje verzi v2.1.0 – plně refaktorovaný a stabilizovaný CodePlanner v angličtině s novými pravidly a design systémem.** Spusťte zkompilovaný ZIP, otestujte funkčnost a načtení starých .vcbrief souborů!
+**Jenda otestuje verzi v2.2.0 – plně lokalizovanou a stabilizovanou aplikaci CodePlanner v češtině i angličtině.** Spusťte zkompilovaný ZIP, otestujte přepínání jazyků, funkčnost s Gemini API a načtení starých .vcbrief souborů!
 
 ## ✅ Hotovo
 - v0.1 kompletní a **ověřená Jendou na reálných Windows** (spuštění, okno, diktování, exporty – vše OK)
@@ -41,12 +41,12 @@ Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilov
 - **v1.9: interaktivní HTML export (micro-site)** – přidán export do jednoho přenosného HTML souboru s plnohodnotným interaktivním webovým portálem projektu (přepínač tmavého režimu, odškrtávací backlog, live search a responzivní vzhled). 128 testů OK.
 - **v2.0.1: refaktor, stabilizace a opravy kritických chyb** – dokončena modularizace (rozdělení MainForm a SpecCore na samostatné soubory), vyřešeny 4 kritické bezpečnostní a stabilizační nálezy (L1, L2, S1 a S2), zavedeny příslušné jednotkové testy a celkový počet testů vzrostl na 174 (všechny OK).
 - **v2.1.0: překlad do angličtiny, design systém a nová pravidla konzistence** – kompletní překlad datových struktur jádra, API klienta, hlasového nahrávání a formulářů z češtiny do angličtiny. Zajištěna 100% zpětná kompatibilita pro načítání českých specifikací `.vcbrief`. Sjednoceny barvy a písma do `DesignSystem.cs`, čímž se zamezilo GDI leakům. Přidána nová pravidla offline kontroly konzistence: **Rule 12 (strategie zálohování)** a **Rule 13 (dokumentace k externímu API)**. Testovací sada byla přepsána a úspěšně otestována (všechny testy OK). Zkompilován finální distribuční ZIP `CodePlanner-v2.1.0.zip`.
-- **v2.2.0: robustní validace, bezpečné otevírání a opravy chyb z auditu** – implementována hloubková doménová validace a čištění deserializovaných projektů v loaderu, zaveden Safe Load Workflow (vytvoření a otestování lokální kopie před prohozením a překreslením UI), omezení délky ukládané chybové odpovědi na 100k znaků, zobrazování chyb načítání šablon z `sablony.json` v UI, odstranění nepoužívaného a opuštěného kódu. Všech 175 testů jádra prošlo úspěšně.
+- **v2.2.0: robustní validace, kompletní lokalizace a opravy chyb z auditu** – implementována hloubková doménová validace a čištění deserializovaných projektů v loaderu, zaveden Safe Load Workflow (vytvoření a otestování lokální kopie před prohozením a překreslením UI), omezení délky ukládané chybové odpovědi na 100k znaků, zobrazování chyb načítání šablon z `sablony.json` v UI, odstranění nepoužívaného a opuštěného kódu. Kompletně do-lokalizovány zbývající dialogy, menu, statusy, nápovědy a PDF exporty, čímž vznikl plně bilingvní (česko-anglický) systém. Repozitář vyčištěn od dočasných a starých sestavení. Všech 174 testů jádra prošlo úspěšně.
 
 
 ## 📝 TODO
 ### MVP (nutné pro v1)
-- Jenda otestuje verzi v2.1.0 (zkompilovaný ZIP a funkčnost s Gemini API)
+- Jenda otestuje verzi v2.2.0 s kompletní lokalizací (zkompilovaný ZIP a funkčnost s Gemini API)
 
 ### Backlog (později)
 - Napojení na Claude API (AI otázky a generování specifikace) – vlastní API klíč v nastavení (přeskočeno, Gemini stačí)

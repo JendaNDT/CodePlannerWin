@@ -43,7 +43,10 @@ namespace CodePlanner
                 }
                 else
                 {
-                    throw new Exception("No PDF printer found (e.g. Microsoft Print to PDF). Please install a PDF printer and try again.");
+                    throw new Exception(CodePlanner.Core.LocalizationService.T(
+                        "Nebyla nalezena žádná tiskárna PDF (např. Microsoft Print to PDF). Nainstalujte prosím tiskárnu PDF a zkuste to znovu.",
+                        "No PDF printer found (e.g. Microsoft Print to PDF). Please install a PDF printer and try again."
+                    ));
                 }
 
                 pd.PrintPage += Pd_PrintPage;
@@ -95,11 +98,11 @@ namespace CodePlanner
                 using (var fTag = new Font("Segoe UI", 12f, FontStyle.Bold))
                 using (var bTeal = new SolidBrush(teal))
                 {
-                    g.DrawString("SPECIFIKACE PROJEKTU", fTag, bTeal, startX, startY);
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("SPECIFIKACE PROJEKTU", "PROJECT SPECIFICATION"), fTag, bTeal, startX, startY);
                 }
 
                 startY += 30;
-                string nazev = string.IsNullOrWhiteSpace(_project.Name) ? "Nový projekt" : _project.Name.Trim();
+                string nazev = string.IsNullOrWhiteSpace(_project.Name) ? CodePlanner.Core.LocalizationService.T("Nový projekt", "New project") : _project.Name.Trim();
                 using (var fTitle = new Font("Segoe UI", 26f, FontStyle.Bold))
                 using (var bNavy = new SolidBrush(navy))
                 {
@@ -111,7 +114,7 @@ namespace CodePlanner
                 using (var fSub = new Font("Segoe UI", 12f, FontStyle.Italic))
                 using (var bGray = new SolidBrush(Color.Gray))
                 {
-                    g.DrawString("Strukturovaný technický brief a analýza požadavků", fSub, bGray, startX, startY);
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("Strukturovaný technický brief a analýza požadavků", "Structured technical brief and requirements analysis"), fSub, bGray, startX, startY);
                 }
 
                 startY = e.PageBounds.Height - 220;
@@ -120,17 +123,17 @@ namespace CodePlanner
                 using (var bNavy = new SolidBrush(navy))
                 using (var bGray = new SolidBrush(Color.DimGray))
                 {
-                    g.DrawString("Verze specifikace:", fLabel, bNavy, startX, startY);
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("Verze specifikace:", "Specification version:"), fLabel, bNavy, startX, startY);
                     g.DrawString(_project.Version.ToString(), fVal, bGray, startX + 130, startY);
-
-                    g.DrawString("Datum vygenerování:", fLabel, bNavy, startX, startY + 22);
-                    g.DrawString(DateTime.Now.ToString("d. M. yyyy"), fVal, bGray, startX + 130, startY + 22);
-
-                    g.DrawString("Typ / Šablona:", fLabel, bNavy, startX, startY + 44);
+ 
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("Datum vygenerování:", "Generation date:"), fLabel, bNavy, startX, startY + 22);
+                    g.DrawString(DateTime.Now.ToString(CodePlanner.Core.LocalizationService.T("d. M. yyyy", "yyyy-MM-dd")), fVal, bGray, startX + 130, startY + 22);
+ 
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("Typ / Šablona:", "Type / Template:"), fLabel, bNavy, startX, startY + 44);
                     g.DrawString(SpecificationService.GetProjectTypeName(_project.ProjectTypeKey), fVal, bGray, startX + 130, startY + 44);
-
-                    g.DrawString("Nástroj:", fLabel, bNavy, startX, startY + 66);
-                    g.DrawString("CodePlanner (AI-Powered)", fVal, bGray, startX + 130, startY + 66);
+ 
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("Nástroj:", "Tool:"), fLabel, bNavy, startX, startY + 66);
+                    g.DrawString(CodePlanner.Core.LocalizationService.T("CodePlanner (s podporou AI)", "CodePlanner (AI-Powered)"), fVal, bGray, startX + 130, startY + 66);
                 }
 
                 e.HasMorePages = true;
@@ -145,7 +148,10 @@ namespace CodePlanner
             using (var bGray = new SolidBrush(Color.Gray))
             using (var pen = new Pen(Color.FromArgb(220, 224, 230), 0.75f))
             {
-                string headText = $"Specifikace projektu: {(_project.Name ?? "nový projekt")}";
+                string headText = CodePlanner.Core.LocalizationService.T(
+                    $"Specifikace projektu: {(_project.Name ?? "nový projekt")}",
+                    $"Project specification: {(_project.Name ?? "new project")}"
+                );
                 g.DrawString(headText, fHead, bGray, marginL, marginT - 25);
                 g.DrawLine(pen, marginL, marginT - 12, marginR, marginT - 12);
             }
@@ -154,7 +160,7 @@ namespace CodePlanner
             using (var fFoot = new Font("Segoe UI", 8.5f, FontStyle.Regular))
             using (var bGray = new SolidBrush(Color.Gray))
             {
-                string footText = $"Strana {_strana}";
+                string footText = CodePlanner.Core.LocalizationService.T($"Strana {_strana}", $"Page {_strana}");
                 var size = g.MeasureString(footText, fFoot);
                 g.DrawString(footText, fFoot, bGray, marginL + (width - size.Width) / 2, marginB + 15);
             }

@@ -57,12 +57,39 @@ namespace CodePlanner.Core
 
     public class Question
     {
+        private string _text = "";
+        private string _helpText = "";
+        private string _section = "";
+        private string _defaultAssumption = "";
+
         public string Id { get; set; } = "";
-        public string Text { get; set; } = "";
-        public string HelpText { get; set; } = "";
+
+        public string Text
+        {
+            get => LocalizationService.T(StandardQuestionsTranslations.Get(Id + "_Text", _text), _text);
+            set => _text = value;
+        }
+
+        public string HelpText
+        {
+            get => LocalizationService.T(StandardQuestionsTranslations.Get(Id + "_HelpText", _helpText), _helpText);
+            set => _helpText = value;
+        }
+
         public Impact Impact { get; set; }
-        public string Section { get; set; } = "";
-        public string DefaultAssumption { get; set; } = "";
+
+        public string Section
+        {
+            get => LocalizationService.T(TranslateSection(_section), _section);
+            set => _section = value;
+        }
+
+        public string DefaultAssumption
+        {
+            get => LocalizationService.T(StandardQuestionsTranslations.Get(Id + "_DefaultAssumption", _defaultAssumption), _defaultAssumption);
+            set => _defaultAssumption = value;
+        }
+
         public List<string> Options { get; set; } = new List<string>();
 
         [JsonIgnore]
@@ -71,6 +98,21 @@ namespace CodePlanner.Core
         public Dictionary<ProjectType, string> Helps { get; set; } = new Dictionary<ProjectType, string>();
         [JsonIgnore]
         public Dictionary<ProjectType, string> Assumptions { get; set; } = new Dictionary<ProjectType, string>();
+
+        private static string TranslateSection(string s)
+        {
+            return s switch
+            {
+                "Target & Users" => "Cíl a uživatelé",
+                "Scope" => "Rozsah",
+                "UX" => "UX",
+                "Data" => "Data",
+                "Technology" => "Technika",
+                "Acceptance" => "Akceptace",
+                "Risks" => "Rizika",
+                _ => s
+            };
+        }
 
         public List<string> GetOptions(string typeKey)
         {
@@ -91,17 +133,41 @@ namespace CodePlanner.Core
             switch (id)
             {
                 case "tech-platforma":
-                    return new List<string> { "Web (React + Node.js)", "Mobilní (React Native)", "Desktop (Windows Forms)" };
+                    return new List<string> {
+                        LocalizationService.T("Web (React + Node.js)", "Web (React + Node.js)"),
+                        LocalizationService.T("Mobilní (React Native)", "Mobile (React Native)"),
+                        LocalizationService.T("Desktop (Windows Forms)", "Desktop (Windows Forms)")
+                    };
                 case "tech-offline":
-                    return new List<string> { "Plně offline (lokální ukládání)", "Primárně online (s REST API)", "Hybridní (offline-first s cloud synchronizací)" };
+                    return new List<string> {
+                        LocalizationService.T("Plně offline (lokální ukládání)", "Fully offline (local storage)"),
+                        LocalizationService.T("Primárně online (s REST API)", "Primarily online (with REST API)"),
+                        LocalizationService.T("Hybridní (offline-first s cloud synchronizací)", "Hybrid (offline-first with cloud sync)")
+                    };
                 case "data-obsah":
-                    return new List<string> { "SQLite databáze v souboru", "PostgreSQL na cloudovém serveru", "Lokální JSON konfigurační soubor" };
+                    return new List<string> {
+                        LocalizationService.T("SQLite databáze v souboru", "SQLite file database"),
+                        LocalizationService.T("PostgreSQL na cloudovém serveru", "PostgreSQL on a cloud server"),
+                        LocalizationService.T("Lokální JSON konfigurační soubor", "Local JSON config file")
+                    };
                 case "data-export":
-                    return new List<string> { "Export do CSV a Excelu", "Kompletní JSON záloha", "Žádný export (pouze v aplikaci)" };
+                    return new List<string> {
+                        LocalizationService.T("Export do CSV a Excelu", "Export to CSV and Excel"),
+                        LocalizationService.T("Kompletní JSON záloha", "Full JSON backup"),
+                        LocalizationService.T("Žádný export (pouze v aplikaci)", "No export (app only)")
+                    };
                 case "rizika-reseni":
-                    return new List<string> { "Automatické denní zálohy na pozadí", "Jednoduché chybové hlášení uživateli", "Omezení velikosti nahrávaných dat" };
+                    return new List<string> {
+                        LocalizationService.T("Automatické denní zálohy na pozadí", "Automatic daily background backups"),
+                        LocalizationService.T("Jednoduché chybové hlášení uživateli", "Simple user error reporting"),
+                        LocalizationService.T("Omezení velikosti nahrávaných dat", "Limit uploaded data size")
+                    };
                 case "akceptace":
-                    return new List<string> { "Prochází všechny automatické testy", "Uživatel dokáže úspěšně dokončit celý scénář", "Aplikace splňuje výkonnostní limity (odezva pod 100ms)" };
+                    return new List<string> {
+                        LocalizationService.T("Prochází všechny automatické testy", "All automated tests pass"),
+                        LocalizationService.T("Uživatel dokáže úspěšně dokončit celý scénář", "User successfully completes the scenario"),
+                        LocalizationService.T("Aplikace splňuje výkonnostní limity (odezva pod 100ms)", "App meets performance limits (response under 100ms)")
+                    };
                 default:
                     return new List<string>();
             }
@@ -112,6 +178,14 @@ namespace CodePlanner.Core
             if (Enum.TryParse<ProjectType>(typeKey, true, out var enumType))
             {
                 if (enumType == ProjectType.General) return Text;
+
+                if (string.Equals(LocalizationService.CurrentLanguage, "cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dictKey = Id + "_Text_" + enumType;
+                    string translated = StandardQuestionsTranslations.Get(dictKey, "");
+                    if (!string.IsNullOrWhiteSpace(translated)) return translated;
+                }
+
                 return Texts.TryGetValue(enumType, out var val) && !string.IsNullOrWhiteSpace(val) ? val : Text;
             }
 
@@ -130,6 +204,14 @@ namespace CodePlanner.Core
             if (Enum.TryParse<ProjectType>(typeKey, true, out var enumType))
             {
                 if (enumType == ProjectType.General) return HelpText;
+
+                if (string.Equals(LocalizationService.CurrentLanguage, "cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dictKey = Id + "_HelpText_" + enumType;
+                    string translated = StandardQuestionsTranslations.Get(dictKey, "");
+                    if (!string.IsNullOrWhiteSpace(translated)) return translated;
+                }
+
                 return Helps.TryGetValue(enumType, out var val) && !string.IsNullOrWhiteSpace(val) ? val : HelpText;
             }
 
@@ -148,6 +230,14 @@ namespace CodePlanner.Core
             if (Enum.TryParse<ProjectType>(typeKey, true, out var enumType))
             {
                 if (enumType == ProjectType.General) return DefaultAssumption;
+
+                if (string.Equals(LocalizationService.CurrentLanguage, "cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dictKey = Id + "_DefaultAssumption_" + enumType;
+                    string translated = StandardQuestionsTranslations.Get(dictKey, "");
+                    if (!string.IsNullOrWhiteSpace(translated)) return translated;
+                }
+
                 return Assumptions.TryGetValue(enumType, out var val) && !string.IsNullOrWhiteSpace(val) ? val : DefaultAssumption;
             }
 

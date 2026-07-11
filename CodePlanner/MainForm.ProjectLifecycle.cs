@@ -57,8 +57,8 @@ namespace CodePlanner
         {
             if (!File.Exists(cesta))
             {
-                MessageBox.Show(this, $"File not found:\n\n{cesta}\n\nRemoving from recent files list.",
-                    "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T($"Soubor nebyl nalezen:\n\n{cesta}\n\nOdstraňuji ze seznamu nedávných souborů.", $"File not found:\n\n{cesta}\n\nRemoving from recent files list."),
+                    CodePlanner.Core.LocalizationService.T("Soubor nenalezen", "File Not Found"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 var nast = GeminiSettings.Load();
                 nast.RemoveRecentProject(cesta);
                 RefreshRecentMenu();
@@ -88,7 +88,7 @@ namespace CodePlanner
 
                 RefreshAll();
                 SelectQuestion(dalsiOtazka);
-                SetStatus("Opened: " + Path.GetFileName(cesta));
+                SetStatus(CodePlanner.Core.LocalizationService.T("Otevřeno: ", "Opened: ") + Path.GetFileName(cesta));
 
                 var nast = GeminiSettings.Load();
                 nast.AddRecentProject(cesta);
@@ -96,8 +96,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to load project file.\n\n" + ex.Message,
-                    "Open Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Nepodařilo se načíst projektový soubor.\n\n", "Failed to load project file.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba při otevírání", "Open Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -150,7 +150,7 @@ namespace CodePlanner
                 _dirty = false;
                 DeleteAutosave();   // po ručním uložení už automatická záloha není potřeba
                 RefreshTitle();
-                SetStatus("Saved: " + Path.GetFileName(_cestaSouboru));
+                SetStatus(CodePlanner.Core.LocalizationService.T("Uloženo: ", "Saved: ") + Path.GetFileName(_cestaSouboru));
 
                 var nast = GeminiSettings.Load();
                 nast.AddRecentProject(_cestaSouboru);
@@ -160,8 +160,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to save project.\n\n" + ex.Message,
-                    "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Nepodařilo se uložit projekt.\n\n", "Failed to save project.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba při ukládání", "Save Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -172,8 +172,12 @@ namespace CodePlanner
 
             using var dlg = new SaveFileDialog
             {
-                Title = markdown ? "Export Specification (Markdown)" : "Export Specification (JSON)",
-                Filter = markdown ? "Markdown (*.md)|*.md" : "JSON (*.json)|*.json",
+                Title = markdown 
+                    ? CodePlanner.Core.LocalizationService.T("Exportovat specifikaci (Markdown)", "Export Specification (Markdown)") 
+                    : CodePlanner.Core.LocalizationService.T("Exportovat specifikaci (JSON)", "Export Specification (JSON)"),
+                Filter = markdown 
+                    ? CodePlanner.Core.LocalizationService.T("Markdown (*.md)|*.md", "Markdown (*.md)|*.md") 
+                    : CodePlanner.Core.LocalizationService.T("JSON (*.json)|*.json", "JSON (*.json)|*.json"),
                 FileName = GetSafeFilename(_projekt.Name, "specification") + (markdown ? ".md" : ".json")
             };
             if (dlg.ShowDialog(this) != DialogResult.OK) return;
@@ -182,11 +186,14 @@ namespace CodePlanner
             {
                 var obsah = markdown ? SpecificationService.RenderMarkdown(_projekt) : SpecificationService.RenderJson(_projekt);
                 File.WriteAllText(dlg.FileName, obsah, new UTF8Encoding(true));
-                SetStatus("Export completed: " + Path.GetFileName(dlg.FileName));
+                SetStatus(CodePlanner.Core.LocalizationService.T("Export dokončen: ", "Export completed: ") + Path.GetFileName(dlg.FileName));
 
                 var res = MessageBox.Show(this,
-                    "Specification exported successfully:\n\n" + dlg.FileName + "\n\nDo you want to open the exported file now?",
-                    "Export Completed", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    CodePlanner.Core.LocalizationService.T(
+                        "Specifikace byla úspěšně exportována:\n\n" + dlg.FileName + "\n\nChcete exportovaný soubor nyní otevřít?",
+                        "Specification exported successfully:\n\n" + dlg.FileName + "\n\nDo you want to open the exported file now?"
+                    ),
+                    CodePlanner.Core.LocalizationService.T("Export dokončen", "Export Completed"), MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                 if (res == DialogResult.Yes)
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -198,8 +205,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Export failed.\n\n" + ex.Message,
-                    "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Export selhal.\n\n", "Export failed.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba exportu", "Export Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -209,8 +216,8 @@ namespace CodePlanner
 
             using var dlg = new SaveFileDialog
             {
-                Title = "Export Specification (Interactive HTML Web)",
-                Filter = "HTML Files (*.html;*.htm)|*.html;*.htm",
+                Title = CodePlanner.Core.LocalizationService.T("Exportovat specifikaci (interaktivní HTML web)", "Export Specification (Interactive HTML Web)"),
+                Filter = CodePlanner.Core.LocalizationService.T("HTML soubory (*.html;*.htm)|*.html;*.htm", "HTML Files (*.html;*.htm)|*.html;*.htm"),
                 FileName = GetSafeFilename(_projekt.Name, "specification") + ".html"
             };
             if (dlg.ShowDialog(this) != DialogResult.OK) return;
@@ -219,11 +226,14 @@ namespace CodePlanner
             {
                 var obsah = SpecificationService.RenderHtml(_projekt);
                 File.WriteAllText(dlg.FileName, obsah, Encoding.UTF8);
-                SetStatus("HTML export completed: " + Path.GetFileName(dlg.FileName));
+                SetStatus(CodePlanner.Core.LocalizationService.T("HTML export dokončen: ", "HTML export completed: ") + Path.GetFileName(dlg.FileName));
                 
                 var res = MessageBox.Show(this,
-                    "Interactive HTML specification exported successfully.\n\nDo you want to open it in your browser now?",
-                    "Export Completed", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    CodePlanner.Core.LocalizationService.T(
+                        "Interaktivní HTML specifikace byla úspěšně exportována.\n\nChcete ji nyní otevřít v prohlížeči?",
+                        "Interactive HTML specification exported successfully.\n\nDo you want to open it in your browser now?"
+                    ),
+                    CodePlanner.Core.LocalizationService.T("Export dokončen", "Export Completed"), MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                 if (res == DialogResult.Yes)
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -235,8 +245,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Export failed.\n\n" + ex.Message,
-                    "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Export selhal.\n\n", "Export failed.\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba exportu", "Export Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -246,15 +256,15 @@ namespace CodePlanner
 
             using (var dlg = new SaveFileDialog
             {
-                Title = "Export Specification to PDF",
-                Filter = "PDF Files (*.pdf)|*.pdf",
+                Title = CodePlanner.Core.LocalizationService.T("Exportovat specifikaci do PDF", "Export Specification to PDF"),
+                Filter = CodePlanner.Core.LocalizationService.T("PDF soubory (*.pdf)|*.pdf", "PDF Files (*.pdf)|*.pdf"),
                 FileName = GetSafeFilename(_projekt.Name, "specification") + ".pdf"
             })
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 Cursor = Cursors.WaitCursor;
-                SetStatus("Exporting to PDF...");
+                SetStatus(CodePlanner.Core.LocalizationService.T("Exportuji do PDF...", "Exporting to PDF..."));
                 try
                 {
                     var exp = new PdfExporter(_projekt);
@@ -262,13 +272,16 @@ namespace CodePlanner
 
                     if (!File.Exists(dlg.FileName))
                     {
-                        throw new FileNotFoundException("PDF file was not created. Please check your PDF printer configuration.");
+                        throw new FileNotFoundException(CodePlanner.Core.LocalizationService.T("Soubor PDF nebyl vytvořen. Zkontrolujte prosím konfiguraci své tiskárny PDF.", "PDF file was not created. Please check your PDF printer configuration."));
                     }
 
-                    SetStatus("PDF export completed.");
+                    SetStatus(CodePlanner.Core.LocalizationService.T("PDF export dokončen.", "PDF export completed."));
                     var res = MessageBox.Show(this,
-                        "Specification exported to PDF successfully.\n\nDo you want to open the exported file now?",
-                        "Export Completed", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        CodePlanner.Core.LocalizationService.T(
+                            "Specifikace byla úspěšně exportována do PDF.\n\nChcete exportovaný soubor nyní otevřít?",
+                            "Specification exported to PDF successfully.\n\nDo you want to open the exported file now?"
+                        ),
+                        CodePlanner.Core.LocalizationService.T("Export dokončen", "Export Completed"), MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                     if (res == DialogResult.Yes)
                     {
                         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -280,8 +293,8 @@ namespace CodePlanner
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "Error exporting to PDF:\n\n" + ex.Message,
-                        "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Chyba při exportu do PDF:\n\n", "Error exporting to PDF:\n\n") + ex.Message,
+                        CodePlanner.Core.LocalizationService.T("Chyba exportu", "Export Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 finally
                 {
@@ -299,7 +312,7 @@ namespace CodePlanner
             var nastaveni = GeminiSettings.Load();
             if (nastaveni.RecentProjects == null || nastaveni.RecentProjects.Count == 0)
             {
-                var emptyItem = new ToolStripMenuItem("No recent projects") { Enabled = false };
+                var emptyItem = new ToolStripMenuItem(CodePlanner.Core.LocalizationService.T("Žádné nedávné projekty", "No recent projects")) { Enabled = false };
                 btnOtevritSplit.DropDownItems.Add(emptyItem);
                 return;
             }
@@ -325,9 +338,11 @@ namespace CodePlanner
             }
 
             btnOtevritSplit.DropDownItems.Add(new ToolStripSeparator());
-            var clearItem = new ToolStripMenuItem("Clear history...", null, (s, e) => 
+            var clearItem = new ToolStripMenuItem(CodePlanner.Core.LocalizationService.T("Vymazat historii...", "Clear history..."), null, (s, e) => 
             {
-                var confirm = MessageBox.Show(this, "Are you sure you want to clear the history of recent projects?", "Clear History", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var confirm = MessageBox.Show(this,
+                    CodePlanner.Core.LocalizationService.T("Opravdu chcete vymazat historii nedávných projektů?", "Are you sure you want to clear the history of recent projects?"),
+                    CodePlanner.Core.LocalizationService.T("Vymazat historii", "Clear History"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (confirm == DialogResult.Yes)
                 {
                     var nast = GeminiSettings.Load();
@@ -345,10 +360,10 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_projekt.ReferenceText))
             {
-                btnReferencie.Text = "📎 Attach Reference";
+                btnReferencie.Text = "📎 " + CodePlanner.Core.LocalizationService.T("Připojit podklady", "Attach Reference");
                 btnReferencie.BackColor = Color.Gainsboro;
                 btnReferencie.ForeColor = Navy;
-                _tipReference.SetToolTip(btnReferencie, "Attach a text file (TXT, MD, JSON) as reference documentation for AI analysis.");
+                _tipReference.SetToolTip(btnReferencie, CodePlanner.Core.LocalizationService.T("Připojit textový soubor (TXT, MD, JSON) jako referenční podklady pro AI analýzu.", "Attach a text file (TXT, MD, JSON) as reference documentation for AI analysis."));
             }
             else
             {
@@ -360,7 +375,10 @@ namespace CodePlanner
                 btnReferencie.Text = "📎 " + zkracenyNazev;
                 btnReferencie.BackColor = TealSvetla;
                 btnReferencie.ForeColor = Navy;
-                _tipReference.SetToolTip(btnReferencie, $"Attached file: {_projekt.ReferenceName}\nContent: {(_projekt.ReferenceText.Length > 100 ? _projekt.ReferenceText.Substring(0, 100) + "..." : _projekt.ReferenceText)}\n\nClick to view options.");
+                _tipReference.SetToolTip(btnReferencie, CodePlanner.Core.LocalizationService.T(
+                    $"Připojený soubor: {_projekt.ReferenceName}\nObsah: {(_projekt.ReferenceText.Length > 100 ? _projekt.ReferenceText.Substring(0, 100) + "..." : _projekt.ReferenceText)}\n\nKliknutím zobrazíte možnosti.",
+                    $"Attached file: {_projekt.ReferenceName}\nContent: {(_projekt.ReferenceText.Length > 100 ? _projekt.ReferenceText.Substring(0, 100) + "..." : _projekt.ReferenceText)}\n\nClick to view options."
+                ));
             }
         }
 
@@ -379,8 +397,11 @@ namespace CodePlanner
         private void LoadReference()
         {
             using var dlg = new OpenFileDialog();
-            dlg.Filter = "Supported text files (*.txt;*.md;*.json;*.html)|*.txt;*.md;*.json;*.html|All files (*.*)|*.*";
-            dlg.Title = "Select reference documentation file";
+            dlg.Filter = CodePlanner.Core.LocalizationService.T(
+                "Podporované textové soubory (*.txt;*.md;*.json;*.html)|*.txt;*.md;*.json;*.html|Všechny soubory (*.*)|*.*",
+                "Supported text files (*.txt;*.md;*.json;*.html)|*.txt;*.md;*.json;*.html|All files (*.*)|*.*"
+            );
+            dlg.Title = CodePlanner.Core.LocalizationService.T("Vyberte soubor s referenční dokumentací", "Select reference documentation file");
 
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
@@ -389,24 +410,26 @@ namespace CodePlanner
                     var fileInfo = new FileInfo(dlg.FileName);
                     if (fileInfo.Length > 2 * 1024 * 1024)
                     {
-                        MessageBox.Show(this, "The selected file is too large (maximum size is 2 MB).", "Large File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Vybraný soubor je příliš velký (maximální velikost je 2 MB).", "The selected file is too large (maximum size is 2 MB)."),
+                            CodePlanner.Core.LocalizationService.T("Příliš velký soubor", "Large File"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
                     string text = File.ReadAllText(dlg.FileName);
                     if (string.IsNullOrWhiteSpace(text))
                     {
-                        MessageBox.Show(this, "The selected file is empty.", "Empty File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Vybraný soubor je prázdný.", "The selected file is empty."),
+                            CodePlanner.Core.LocalizationService.T("Prázdný soubor", "Empty File"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
                     _projekt.ReferenceText = text;
                     _projekt.ReferenceName = Path.GetFileName(dlg.FileName);
-                    SpecificationService.LogChange(_projekt, "Attachment", $"Attached reference file {_projekt.ReferenceName}.");
+                    SpecificationService.LogChange(_projekt, CodePlanner.Core.LocalizationService.T("Příloha", "Attachment"), CodePlanner.Core.LocalizationService.T($"Připojen referenční soubor {_projekt.ReferenceName}.", $"Attached reference file {_projekt.ReferenceName}."));
 
                     MarkChanged();
                     RefreshAll();
-                    SetStatus($"Attached file: {_projekt.ReferenceName}");
+                    SetStatus(CodePlanner.Core.LocalizationService.T($"Připojen soubor: {_projekt.ReferenceName}", $"Attached file: {_projekt.ReferenceName}"));
                 }
                 catch (Exception ex)
                 {
@@ -421,7 +444,7 @@ namespace CodePlanner
 
             using var dlg = new Form
             {
-                Text = $"Attachment content: {_projekt.ReferenceName}",
+                Text = CodePlanner.Core.LocalizationService.T($"Obsah přílohy: {_projekt.ReferenceName}", $"Attachment content: {_projekt.ReferenceName}"),
                 Size = new Size(600, 500),
                 StartPosition = FormStartPosition.CenterParent,
                 MinimizeBox = false,
@@ -450,11 +473,11 @@ namespace CodePlanner
             string? nazev = _projekt.ReferenceName;
             _projekt.ReferenceText = null;
             _projekt.ReferenceName = null;
-            SpecificationService.LogChange(_projekt, "Attachment", $"Removed reference file {nazev}.");
+            SpecificationService.LogChange(_projekt, CodePlanner.Core.LocalizationService.T("Příloha", "Attachment"), CodePlanner.Core.LocalizationService.T($"Odstraněn referenční soubor {nazev}.", $"Removed reference file {nazev}."));
 
             MarkChanged();
             RefreshAll();
-            SetStatus("Reference file removed.");
+            SetStatus(CodePlanner.Core.LocalizationService.T("Referenční soubor byl odstraněn.", "Reference file removed."));
         }
 
         private void RefreshMockupButton()
@@ -463,12 +486,12 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(_projekt.MockupBase64))
             {
-                btnMockup.Text = "🖼 Attach Mockup";
+                btnMockup.Text = "🖼 " + CodePlanner.Core.LocalizationService.T("Připojit mockup", "Attach Mockup");
                 btnMockup.BackColor = Color.Gainsboro;
                 btnMockup.ForeColor = Navy;
                 if (_tipReference != null)
                 {
-                    _tipReference.SetToolTip(btnMockup, "Attach an image, screenshot, or diagram (PNG/JPG) as visual context for AI analysis.");
+                    _tipReference.SetToolTip(btnMockup, CodePlanner.Core.LocalizationService.T("Připojit obrázek, snímek obrazovky nebo diagram (PNG/JPG) jako vizuální kontext pro AI analýzu.", "Attach an image, screenshot, or diagram (PNG/JPG) as visual context for AI analysis."));
                 }
             }
             else
@@ -483,7 +506,7 @@ namespace CodePlanner
                 btnMockup.ForeColor = Navy;
                 if (_tipReference != null)
                 {
-                    _tipReference.SetToolTip(btnMockup, $"Attached visual mockup: {_projekt.MockupName}\n\nClick to view options.");
+                    _tipReference.SetToolTip(btnMockup, CodePlanner.Core.LocalizationService.T($"Připojený vizuální mockup: {_projekt.MockupName}\n\nKliknutím zobrazíte možnosti.", $"Attached visual mockup: {_projekt.MockupName}\n\nClick to view options."));
                 }
             }
         }
@@ -503,8 +526,11 @@ namespace CodePlanner
         private void LoadMockup()
         {
             using var dlg = new OpenFileDialog();
-            dlg.Filter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|All files (*.*)|*.*";
-            dlg.Title = "Select mockup or interface sketch image";
+            dlg.Filter = CodePlanner.Core.LocalizationService.T(
+                "Obrázky (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|Všechny soubory (*.*)|*.*",
+                "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|All files (*.*)|*.*"
+            );
+            dlg.Title = CodePlanner.Core.LocalizationService.T("Vyberte obrázek mockupu nebo náčrtu rozhraní", "Select mockup or interface sketch image");
 
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
@@ -513,13 +539,15 @@ namespace CodePlanner
                     byte[] bytes = File.ReadAllBytes(dlg.FileName);
                     if (bytes.Length == 0)
                     {
-                        MessageBox.Show(this, "The selected file is empty.", "Empty File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Vybraný soubor je prázdný.", "The selected file is empty."),
+                            CodePlanner.Core.LocalizationService.T("Prázdný soubor", "Empty File"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
                     if (bytes.Length > 4 * 1024 * 1024)
                     {
-                        MessageBox.Show(this, "The selected file is too large (maximum size is 4 MB).", "Large File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Vybraný soubor je příliš velký (maximální velikost je 4 MB).", "The selected file is too large (maximum size is 4 MB)."),
+                            CodePlanner.Core.LocalizationService.T("Příliš velký soubor", "Large File"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
@@ -534,17 +562,18 @@ namespace CodePlanner
                     }
                     catch
                     {
-                        MessageBox.Show(this, "The selected file is not a valid image.", "Invalid Format", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Vybraný soubor není platným obrázkem.", "The selected file is not a valid image."),
+                            CodePlanner.Core.LocalizationService.T("Neplatný formát", "Invalid Format"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
                     _projekt.MockupBase64 = Convert.ToBase64String(bytes);
                     _projekt.MockupName = Path.GetFileName(dlg.FileName);
-                    SpecificationService.LogChange(_projekt, "Sketch", $"Attached visual mockup {_projekt.MockupName}.");
+                    SpecificationService.LogChange(_projekt, CodePlanner.Core.LocalizationService.T("Náčrt", "Sketch"), CodePlanner.Core.LocalizationService.T($"Připojen vizuální mockup {_projekt.MockupName}.", $"Attached visual mockup {_projekt.MockupName}."));
 
                     MarkChanged();
                     RefreshAll();
-                    SetStatus($"Attached visual mockup: {_projekt.MockupName}");
+                    SetStatus(CodePlanner.Core.LocalizationService.T($"Připojen vizuální mockup: {_projekt.MockupName}", $"Attached visual mockup: {_projekt.MockupName}"));
                 }
                 catch (Exception ex)
                 {
@@ -564,7 +593,7 @@ namespace CodePlanner
                 using (var img = Image.FromStream(ms))
                 using (var dlg = new Form
                 {
-                    Text = $"Mockup viewer: {_projekt.MockupName}",
+                    Text = CodePlanner.Core.LocalizationService.T($"Prohlížeč mockupů: {_projekt.MockupName}", $"Mockup viewer: {_projekt.MockupName}"),
                     Size = new Size(800, 600),
                     StartPosition = FormStartPosition.CenterParent,
                     MinimizeBox = false,
@@ -588,7 +617,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Failed to display image:\n\n" + ex.Message, "Display Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, CodePlanner.Core.LocalizationService.T("Nepodařilo se zobrazit obrázek:\n\n", "Failed to display image:\n\n") + ex.Message,
+                    CodePlanner.Core.LocalizationService.T("Chyba zobrazení", "Display Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -599,19 +629,22 @@ namespace CodePlanner
             string? nazev = _projekt.MockupName;
             _projekt.MockupBase64 = null;
             _projekt.MockupName = null;
-            SpecificationService.LogChange(_projekt, "Sketch", $"Removed visual mockup {nazev}.");
+            SpecificationService.LogChange(_projekt, CodePlanner.Core.LocalizationService.T("Náčrt", "Sketch"), CodePlanner.Core.LocalizationService.T($"Odstraněn vizuální mockup {nazev}.", $"Removed visual mockup {nazev}."));
 
             MarkChanged();
             RefreshAll();
-            SetStatus("Visual mockup removed.");
+            SetStatus(CodePlanner.Core.LocalizationService.T("Vizuální mockup byl odstraněn.", "Visual mockup removed."));
         }
 
         private bool ConfirmUnsavedChanges()
         {
             if (!_dirty) return true;
             var res = MessageBox.Show(this,
-                "You have unsaved changes. Do you want to save them before proceeding?",
-                "Unsaved Changes", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                CodePlanner.Core.LocalizationService.T(
+                    "Máte neuložené změny. Chcete je před pokračováním uložit?",
+                    "You have unsaved changes. Do you want to save them before proceeding?"
+                ),
+                CodePlanner.Core.LocalizationService.T("Neuložené změny", "Unsaved Changes"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (res == DialogResult.Cancel) return false;
             if (res == DialogResult.Yes) return SaveProject();
             return true;

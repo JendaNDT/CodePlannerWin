@@ -10,6 +10,7 @@ namespace CodePlanner
         private readonly GeminiSettings _settings;
         private TextBox txtApiKey = default!;
         private ComboBox cbModel = default!;
+        private ComboBox cbLanguage = default!;
         private CheckBox chkZobrazitKlic = default!;
         private LinkLabel lnkGetApiKey = default!;
         private Button btnUlozit = default!;
@@ -26,15 +27,15 @@ namespace CodePlanner
 
             _settings = GeminiSettings.Load();
 
-            ClientSize = new Size(500, 310);
-            MinimumSize = new Size(450, 310);
+            ClientSize = new Size(500, 380);
+            MinimumSize = new Size(450, 380);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "Gemini API Settings";
+            Text = LocalizationService.T("Nastavení Gemini API", "Gemini API Settings");
             Font = DesignSystem.Body;
             BackColor = DesignSystem.SvetlePozadi;
             ForeColor = DesignSystem.Navy;
@@ -49,7 +50,7 @@ namespace CodePlanner
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 6,
+                RowCount = 8,
                 Padding = new Padding(16),
                 BackColor = Color.Transparent
             };
@@ -58,11 +59,13 @@ namespace CodePlanner
             pnlMain.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Checkbox + LinkLabel flow
             pnlMain.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Model label
             pnlMain.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Model combobox
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Language label
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Language combobox
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Spacer/Buttons
 
             var lblApiKey = new Label
             {
-                Text = "Gemini API Key (can also be set via GEMINI_API_KEY environment variable):",
+                Text = LocalizationService.T("Klíč k API Gemini (lze nastavit i přes proměnnou prostředí GEMINI_API_KEY):", "Gemini API Key (can also be set via GEMINI_API_KEY environment variable):"),
                 AutoSize = true,
                 Font = DesignSystem.BodyBold,
                 Margin = new Padding(0, 0, 0, 4)
@@ -87,7 +90,7 @@ namespace CodePlanner
 
             chkZobrazitKlic = new CheckBox
             {
-                Text = "Show key",
+                Text = LocalizationService.T("Zobrazit klíč", "Show key"),
                 AutoSize = true,
                 Font = DesignSystem.Small,
                 ForeColor = DesignSystem.SedaText,
@@ -101,7 +104,7 @@ namespace CodePlanner
 
             lnkGetApiKey = new LinkLabel
             {
-                Text = "Get API key in Google AI Studio",
+                Text = LocalizationService.T("Získat API klíč v Google AI Studio", "Get API key in Google AI Studio"),
                 Font = DesignSystem.SmallUnderline,
                 LinkColor = DesignSystem.Teal,
                 ActiveLinkColor = Color.FromArgb(19, 150, 137),
@@ -117,7 +120,7 @@ namespace CodePlanner
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "Failed to open link: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, LocalizationService.T("Nepodařilo se otevřít odkaz: ", "Failed to open link: ") + ex.Message, LocalizationService.T("Chyba", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -126,7 +129,7 @@ namespace CodePlanner
 
             var lblModel = new Label
             {
-                Text = "Gemini Model:",
+                Text = LocalizationService.T("Model Gemini:", "Gemini Model:"),
                 AutoSize = true,
                 Font = DesignSystem.BodyBold,
                 Margin = new Padding(0, 0, 0, 4)
@@ -136,7 +139,7 @@ namespace CodePlanner
             {
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Margin = new Padding(0, 0, 0, 20),
+                Margin = new Padding(0, 0, 0, 12),
                 Font = DesignSystem.Body
             };
             cbModel.Items.Add("gemini-2.5-flash");
@@ -144,6 +147,24 @@ namespace CodePlanner
             cbModel.Items.Add("gemini-2.0-flash");
             cbModel.Items.Add("gemini-1.5-flash");
             cbModel.Items.Add("gemini-1.5-pro");
+
+            var lblLanguage = new Label
+            {
+                Text = LocalizationService.T("Jazyk / Language:", "Language / Jazyk:"),
+                AutoSize = true,
+                Font = DesignSystem.BodyBold,
+                Margin = new Padding(0, 0, 0, 4)
+            };
+
+            cbLanguage = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Margin = new Padding(0, 0, 0, 20),
+                Font = DesignSystem.Body
+            };
+            cbLanguage.Items.Add("Čeština (Czech)");
+            cbLanguage.Items.Add("English");
 
             var pnlTlacitka = new FlowLayoutPanel
             {
@@ -156,7 +177,7 @@ namespace CodePlanner
 
             btnStorno = new Button
             {
-                Text = "Cancel",
+                Text = LocalizationService.T("Storno", "Cancel"),
                 DialogResult = DialogResult.Cancel,
                 Size = new Size(90, 30),
                 FlatStyle = FlatStyle.Flat,
@@ -170,7 +191,7 @@ namespace CodePlanner
 
             btnUlozit = new Button
             {
-                Text = "Save",
+                Text = LocalizationService.T("Uložit", "Save"),
                 Size = new Size(90, 30),
                 BackColor = DesignSystem.Teal,
                 ForeColor = Color.White,
@@ -185,7 +206,7 @@ namespace CodePlanner
 
             btnTest = new Button
             {
-                Text = "🧪 Test Connection",
+                Text = LocalizationService.T("🧪 Testovat připojení", "🧪 Test Connection"),
                 Size = new Size(130, 30),
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = DesignSystem.Navy,
@@ -206,6 +227,8 @@ namespace CodePlanner
             pnlMain.Controls.Add(pnlKeyHelper, 0, 2);
             pnlMain.Controls.Add(lblModel, 0, 3);
             pnlMain.Controls.Add(cbModel, 0, 4);
+            pnlMain.Controls.Add(lblLanguage, 0, 5);
+            pnlMain.Controls.Add(cbLanguage, 0, 6);
 
             var wrapper = new Panel { Dock = DockStyle.Fill };
             wrapper.Controls.Add(pnlTlacitka); // Bottom dock first
@@ -231,12 +254,15 @@ namespace CodePlanner
                 cbModel.Items.Add(_settings.GeminiModel);
                 cbModel.SelectedIndex = cbModel.Items.Count - 1;
             }
+
+            cbLanguage.SelectedIndex = string.Equals(_settings.Language, "en", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
         }
 
         private void BtnUlozit_Click(object? sender, EventArgs e)
         {
             _settings.GeminiApiKey = txtApiKey.Text.Trim();
             _settings.GeminiModel = cbModel.SelectedItem?.ToString() ?? "gemini-2.5-flash";
+            _settings.Language = cbLanguage.SelectedIndex == 1 ? "en" : "cs";
 
             try
             {
@@ -246,8 +272,8 @@ namespace CodePlanner
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Error saving settings:\n\n" + ex.Message,
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, LocalizationService.T("Chyba při ukládání nastavení:\n\n", "Error saving settings:\n\n") + ex.Message,
+                    LocalizationService.T("Chyba", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -258,27 +284,27 @@ namespace CodePlanner
 
             if (string.IsNullOrWhiteSpace(testKey))
             {
-                MessageBox.Show(this, "Please enter a valid API key to test.", "Test Connection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, LocalizationService.T("Zadejte prosím platný API klíč pro testování.", "Please enter a valid API key to test."), LocalizationService.T("Test připojení", "Test Connection"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             btnTest.Enabled = false;
-            btnTest.Text = "🧪 Testing...";
+            btnTest.Text = LocalizationService.T("🧪 Testování...", "🧪 Testing...");
             Cursor = Cursors.WaitCursor;
 
             try
             {
                 await GeminiService.TestConnectionAsync(testKey, testModel);
-                MessageBox.Show(this, "Connection to Gemini API verified successfully. Your API key is valid!", "Test Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, LocalizationService.T("Připojení k Gemini API bylo úspěšně ověřeno. Váš API klíč je platný!", "Connection to Gemini API verified successfully. Your API key is valid!"), LocalizationService.T("Test úspěšný", "Test Successful"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Test connection failed:\n\n" + ex.Message, "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, LocalizationService.T("Test připojení selhal:\n\n", "Test connection failed:\n\n") + ex.Message, LocalizationService.T("Chyba připojení", "Connection Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnTest.Enabled = true;
-                btnTest.Text = "🧪 Test Connection";
+                btnTest.Text = LocalizationService.T("🧪 Testovat připojení", "🧪 Test Connection");
                 Cursor = Cursors.Default;
             }
         }

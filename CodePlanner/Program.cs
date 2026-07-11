@@ -8,6 +8,9 @@ namespace CodePlanner
         [STAThread]
         private static void Main()
         {
+            var settings = CodePlanner.Core.GeminiSettings.Load();
+            CodePlanner.Core.LocalizationService.CurrentLanguage = settings.Language;
+
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
