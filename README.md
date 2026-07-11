@@ -52,4 +52,22 @@ Testy jádra (běží i mimo Windows):
 
 ```bash
 cd CoreTests
-dotnet run 
+dotnet run -c Release
+```
+
+## Struktura
+
+| Cesta | Obsah |
+|---|---|
+| `VoiceCoderBrief/Core/SpecCore.cs` | Jádro: model, otázky, verzování, render MD/JSON, kontrola konzistence |
+| `VoiceCoderBrief/MainForm.cs` | WinForms GUI |
+| `CoreTests/` | Automatické testy jádra (47 kontrol) |
+| `PROJECT_STATUS.md` | Živý stav projektu (vibecoding tracker) |
+
+## Roadmapa
+
+Viz `PROJECT_STATUS.md` – backlog zahrnuje napojení na Claude API (AI otázky),
+skutečné STT místo Win+H a podepsání exe.
+
+---
+*Vzniklo vibecodingem – nápad a směr: Jenda (JendaNDT), kód: Claude.*
