@@ -1,12 +1,12 @@
 # CodePlanner – Project Status
-*Naposled aktualizováno: 11. 7. 2026 (v2.0.0)*
+*Naposled aktualizováno: 11. 7. 2026 (v2.0.1)*
 
 ## 🎯 Co to je
 Windows .exe demonstrátor projektu CodePlanner AI (dle PDF návrhu, kap. 18): z volně popsaného nápadu vytvoří řízenými otázkami verzovanou specifikaci s exportem pro kódovacího agenta.
 Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilováno ze sandboxu přes EnableWindowsTargeting.
 
 ## ⏭️ Příští krok
-**Jenda otestuje verzi v2.0.0 – plně refaktorovaný a stabilizovaný CodePlanner s Gemini API.** Spusťte zkompilovaný soubor, otestujte integraci s Gemini, test připojení, AI analýzu, odhady i exporty!
+**Jenda otestuje verzi v2.0.1 – plně refaktorovaný a stabilizovaný CodePlanner s Gemini API.** Spusťte zkompilovaný soubor, otestujte integraci s Gemini, test připojení, AI analýzu, odhady i exporty!
 
 ## ✅ Hotovo
 - v0.1 kompletní a **ověřená Jendou na reálných Windows** (spuštění, okno, diktování, exporty – vše OK)
@@ -39,11 +39,11 @@ Stack: C# / .NET 8, WinForms, self-contained single-file exe (win-x64), kompilov
 - **v1.7: import a analýza skic (mockupů)** – přidáno tlačítko pro nahrání skic rozhraní a screenshotů (PNG/JPG), které Gemini zkoumá jako vizuální kontext při AI analýze nápadu i v chatu, a vestavěn obrázkový prohlížeč. 119 testů OK.
 - **v1.8: AI odhad náročnosti a metriky** – integrován panel metrik, který zkoumá specifikaci i backlog a spočítá odhad pracnosti (hodiny), složitost projektu, optimální tým, rozpočet, technický rozbor a rizika odhadu. 124 testů OK.
 - **v1.9: interaktivní HTML export (micro-site)** – přidán export do jednoho přenosného HTML souboru s plnohodnotným interaktivním webovým portálem projektu (přepínač tmavého režimu, odškrtávací backlog, live search a responzivní vzhled). 128 testů OK.
-- **v2.0.0: refaktor, stabilizace a opravy kritických chyb** – dokončena modularizace (rozdělení MainForm a SpecCore na samostatné soubory), vyřešeny 4 kritické bezpečnostní a stabilizační nálezy (L1, L2, S1 a S2), zavedeny příslušné jednotkové testy a celkový počet testů vzrostl na 174 (všechny OK).
+- **v2.0.1: refaktor, stabilizace a opravy kritických chyb** – dokončena modularizace (rozdělení MainForm a SpecCore na samostatné soubory), vyřešeny 4 kritické bezpečnostní a stabilizační nálezy (L1, L2, S1 a S2), zavedeny příslušné jednotkové testy a celkový počet testů vzrostl na 174 (všechny OK).
 
 ## 📝 TODO
 ### MVP (nutné pro v1)
-- Jenda otestuje verzi v2.0.0 (zkompilovaný ZIP a funkčnost s Gemini API)
+- Jenda otestuje verzi v2.0.1 (zkompilovaný ZIP a funkčnost s Gemini API)
 
 ### Backlog (později)
 - Napojení na Claude API (AI otázky a generování specifikace) – vlastní API klíč v nastavení (přeskočeno, Gemini stačí)
